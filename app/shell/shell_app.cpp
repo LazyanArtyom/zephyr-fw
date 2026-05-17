@@ -40,10 +40,10 @@ int CmdHelloWorld(const shell* shell, size_t argc, char** argv)
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
     app_subcommands,
-    SHELL_CMD(status, nullptr, "Show application status.", CmdStatus),
-    SHELL_CMD(version, nullptr, "Show application version.", CmdVersion),
+    SHELL_CMD(status, NULL, "Show application status.", CmdStatus),
+    SHELL_CMD(version, NULL, "Show application version.", CmdVersion),
     SHELL_SUBCMD_SET_END
 );
 
-SHELL_CMD_REGISTER(app, &app_subcommands, "Application commands.", nullptr);
-SHELL_CMD_REGISTER(hello_world, nullptr, "Run the hello world command.", CmdHelloWorld);
+SHELL_CMD_REGISTER(app, &app_subcommands, "Application commands.", NULL);
+SHELL_CMD_REGISTER(hello_world, NULL, "Run the hello world command.", CmdHelloWorld);

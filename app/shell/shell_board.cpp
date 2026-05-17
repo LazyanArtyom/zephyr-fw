@@ -16,4 +16,4 @@ int CmdBoard(const shell* shell, size_t argc, char** argv)
 
 }  // namespace
 
-SHELL_CMD_REGISTER(board, nullptr, "Show board information.", CmdBoard);
+SHELL_CMD_REGISTER(board, NULL, "Show board information.", CmdBoard);

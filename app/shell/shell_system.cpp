@@ -28,9 +28,9 @@ int CmdReboot(const shell* shell, size_t argc, char** argv)
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
     system_subcommands,
-    SHELL_CMD(uptime, nullptr, "Show system uptime.", CmdUptime),
-    SHELL_CMD(reboot, nullptr, "Reboot the board.", CmdReboot),
+    SHELL_CMD(uptime, NULL, "Show system uptime.", CmdUptime),
+    SHELL_CMD(reboot, NULL, "Reboot the board.", CmdReboot),
     SHELL_SUBCMD_SET_END
 );
 
-SHELL_CMD_REGISTER(system, &system_subcommands, "System commands.", nullptr);
+SHELL_CMD_REGISTER(system, &system_subcommands, "System commands.", NULL);

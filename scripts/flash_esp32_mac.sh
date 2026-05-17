@@ -24,4 +24,4 @@ if [[ ! -f "${BIN_FILE}" ]]; then
     exit 1
 fi
 
-python -m esptool     --chip esp32     --port "${PORT}"     --baud 460800     write-flash     --flash-mode dio     --flash-freq 40m     --flash-size detect     0x1000 "${BIN_FILE}"
+python3 -m esptool     --chip esp32     --port "${PORT}"     --baud 460800     write-flash     --flash-mode dio     --flash-freq 40m     --flash-size detect     0x1000 "${BIN_FILE}"

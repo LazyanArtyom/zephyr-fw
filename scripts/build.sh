@@ -5,9 +5,10 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 BOARD_PROFILE="${1:-}"
 BUILD_PROFILE="${2:-debug}"
+BUILD_MODE="${3:-auto}"
 
 if [[ -z "${BOARD_PROFILE}" ]]; then
-    echo "Usage: $0 <board_profile> <debug|release>"
+    echo "Usage: $0 <board_profile> <debug|release> [auto|clean|incremental]"
     echo
     "${PROJECT_ROOT}/scripts/list_boards.sh"
     exit 1
@@ -46,6 +47,23 @@ case "${BUILD_PROFILE}" in
         ;;
 esac
 
+case "${BUILD_MODE}" in
+    auto)
+        PRISTINE_ARGS=(-p auto)
+        ;;
+    clean|pristine)
+        PRISTINE_ARGS=(-p always)
+        ;;
+    incremental|no)
+        PRISTINE_ARGS=()
+        ;;
+    *)
+        echo "Unknown build mode: ${BUILD_MODE}"
+        echo "Valid build modes: auto, clean, pristine, incremental, no"
+        exit 1
+        ;;
+esac
+
 COMMON_CONF="${PROJECT_ROOT}/prj.conf"
 SHELL_CONF="${PROJECT_ROOT}/configs/shell.conf"
 LOGGING_CONF="${PROJECT_ROOT}/configs/logging.conf"
@@ -61,9 +79,17 @@ echo "Project root   : ${PROJECT_ROOT}"
 echo "Board profile  : ${BOARD_PROFILE}"
 echo "Zephyr board   : ${ZEPHYR_BOARD}"
 echo "Build profile  : ${BUILD_PROFILE}"
+echo "Build mode     : ${BUILD_MODE}"
 echo "Build dir      : ${BUILD_DIR}"
 echo "Conf files     : ${CONF_FILES}"
 echo "Overlay        : ${BOARD_OVERLAY}"
 echo
 
-west build -p always     -b "${ZEPHYR_BOARD}"     -d "${BUILD_DIR}"     "${PROJECT_ROOT}"     --     -DCONF_FILE="${CONF_FILES}"     -DDTC_OVERLAY_FILE="${BOARD_OVERLAY}"     -DAPP_BUILD_PROFILE="${BUILD_PROFILE}"
+west build "${PRISTINE_ARGS[@]}" \
+    -b "${ZEPHYR_BOARD}" \
+    -d "${BUILD_DIR}" \
+    "${PROJECT_ROOT}" \
+    -- \
+    -DCONF_FILE="${CONF_FILES}" \
+    -DDTC_OVERLAY_FILE="${BOARD_OVERLAY}" \
+    -DAPP_BUILD_PROFILE="${BUILD_PROFILE}"
