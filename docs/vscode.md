@@ -9,15 +9,20 @@ VS Code settings and tasks are committed under:
 Important tasks:
 
 ```text
-build: esp32 debug
-build: esp32 debug clean
-build: esp32 release
-export compile_commands
-package: esp32 debug
+build: esp32 debug no-mcuboot
+build: esp32 release no-mcuboot
+build: esp32 debug mcuboot
+build: esp32 release mcuboot
+export compile_commands: esp32 debug no-mcuboot
+package: esp32 debug no-mcuboot
 flash: esp32 mac
 monitor: esp32 uart
 check: format
 check: clang-tidy
+kb: build debug no-mcuboot
+kb: build release no-mcuboot
+kb: build debug mcuboot
+kb: build release mcuboot
 ```
 
 After building inside Docker, run:
@@ -26,4 +31,50 @@ After building inside Docker, run:
 ./scripts/export_compile_commands.sh --board esp32_oled --profile debug --boot no-mcuboot
 ```
 
-This creates a host-path-adjusted `compile_commands.json` for clangd.
+This creates a host-path-adjusted and clangd-friendly `compile_commands.json`.
+
+## clangd
+
+Use the clangd extension as the primary C/C++ language server. The Microsoft
+C/C++ extension IntelliSense and automatic clang-tidy runner are disabled in
+workspace settings so diagnostics come from one place.
+Recommended extensions are listed in `.vscode/extensions.json`.
+
+The exported compile database rewrites Docker paths such as:
+
+```text
+/home/artyom/Documents/projects
+```
+
+to the macOS project root:
+
+```text
+/Users/artyom/Documents/projects
+```
+
+It also strips Zephyr SDK flags that host clangd/clang-tidy do not understand.
+
+## Hotkeys
+
+VS Code keybindings are user-profile settings. Open `Preferences: Open Keyboard
+Shortcuts (JSON)` and add:
+
+```json
+[
+  { "key": "f6", "command": "workbench.action.tasks.runTask", "args": "kb: build debug no-mcuboot" },
+  { "key": "shift+f6", "command": "workbench.action.tasks.runTask", "args": "kb: build release no-mcuboot" },
+  { "key": "f7", "command": "workbench.action.tasks.runTask", "args": "kb: build debug mcuboot" },
+  { "key": "shift+f7", "command": "workbench.action.tasks.runTask", "args": "kb: build release mcuboot" }
+]
+```
+
+Key meanings:
+
+| Key | Action |
+| --- | --- |
+| `F6` | Debug no-MCUboot build and refresh `compile_commands.json` |
+| `Shift+F6` | Release no-MCUboot build and refresh `compile_commands.json` |
+| `F7` | Debug MCUboot build and refresh `compile_commands.json` |
+| `Shift+F7` | Release MCUboot build and refresh `compile_commands.json` |
+
+On macOS you may need `Fn + Fx` depending on system keyboard settings.

@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build: esp32 debug",
+      "label": "build: esp32 debug no-mcuboot",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/build.sh",
       "args": [
@@ -24,26 +24,7 @@
       ]
     },
     {
-      "label": "build: esp32 debug clean",
-      "type": "shell",
-      "command": "${workspaceFolder}/scripts/build.sh",
-      "args": [
-        "--board",
-        "esp32_oled",
-        "--profile",
-        "debug",
-        "--boot",
-        "no-mcuboot",
-        "--mode",
-        "clean"
-      ],
-      "group": "build",
-      "problemMatcher": [
-        "$gcc"
-      ]
-    },
-    {
-      "label": "build: esp32 release",
+      "label": "build: esp32 release no-mcuboot",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/build.sh",
       "args": [
@@ -62,7 +43,64 @@
       ]
     },
     {
-      "label": "export compile_commands",
+      "label": "build: esp32 debug mcuboot",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "debug",
+        "--boot",
+        "mcuboot",
+        "--mode",
+        "auto"
+      ],
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "build: esp32 release mcuboot",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "release",
+        "--boot",
+        "mcuboot",
+        "--mode",
+        "auto"
+      ],
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "build: esp32 debug no-mcuboot clean",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "debug",
+        "--boot",
+        "no-mcuboot",
+        "--mode",
+        "clean"
+      ],
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "export compile_commands: esp32 debug no-mcuboot",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/export_compile_commands.sh",
       "args": [
@@ -74,12 +112,63 @@
         "no-mcuboot"
       ],
       "dependsOn": [
-        "build: esp32 debug"
+        "build: esp32 debug no-mcuboot"
       ],
       "problemMatcher": []
     },
     {
-      "label": "package: esp32 debug",
+      "label": "export compile_commands: esp32 release no-mcuboot",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/export_compile_commands.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "release",
+        "--boot",
+        "no-mcuboot"
+      ],
+      "dependsOn": [
+        "build: esp32 release no-mcuboot"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "export compile_commands: esp32 debug mcuboot",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/export_compile_commands.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "debug",
+        "--boot",
+        "mcuboot"
+      ],
+      "dependsOn": [
+        "build: esp32 debug mcuboot"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "export compile_commands: esp32 release mcuboot",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/export_compile_commands.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "release",
+        "--boot",
+        "mcuboot"
+      ],
+      "dependsOn": [
+        "build: esp32 release mcuboot"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "package: esp32 debug no-mcuboot",
       "type": "shell",
       "command": "${workspaceFolder}/scripts/package.sh",
       "args": [
@@ -91,7 +180,7 @@
         "no-mcuboot"
       ],
       "dependsOn": [
-        "build: esp32 debug"
+        "build: esp32 debug no-mcuboot"
       ],
       "problemMatcher": []
     },
@@ -110,7 +199,7 @@
         "no-mcuboot"
       ],
       "dependsOn": [
-        "build: esp32 debug"
+        "build: esp32 debug no-mcuboot"
       ],
       "problemMatcher": []
     },
@@ -141,11 +230,47 @@
         "build/esp32_oled/debug/no-mcuboot"
       ],
       "dependsOn": [
-        "build: esp32 debug"
+        "build: esp32 debug no-mcuboot"
       ],
       "problemMatcher": [
         "$gcc"
       ]
+    },
+    {
+      "label": "kb: build debug no-mcuboot",
+      "type": "shell",
+      "dependsOn": [
+        "export compile_commands: esp32 debug no-mcuboot"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "kb: build release no-mcuboot",
+      "type": "shell",
+      "dependsOn": [
+        "export compile_commands: esp32 release no-mcuboot"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "kb: build debug mcuboot",
+      "type": "shell",
+      "dependsOn": [
+        "export compile_commands: esp32 debug mcuboot"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "kb: build release mcuboot",
+      "type": "shell",
+      "dependsOn": [
+        "export compile_commands: esp32 release mcuboot"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
     }
   ]
 }

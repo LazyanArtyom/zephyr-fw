@@ -2,13 +2,23 @@ CompileFlags:
   CompilationDatabase: .
   Add:
     - -D__CLANGD__
+    - -D__XTENSA__
+    - -D__xtensa__
   Remove:
     - -fmodule-mapper=*
     - -fdeps-format=*
     - -fmodules-ts
     - -mlongcalls
     - -specs=*
+    - --sysroot=*
+    - --sysroot
     - --param=*
+    - -fmacro-prefix-map=*
+    - -ffunction-sections
+    - -fdata-sections
+    - -fno-pic
+    - -fno-pie
+    - -fno-asynchronous-unwind-tables
     - -fno-defer-pop
     - -fno-reorder-functions
     - -fstrict-volatile-bitfields
@@ -16,3 +26,8 @@ CompileFlags:
 
 Diagnostics:
   UnusedIncludes: Strict
+  ClangTidy:
+    Remove:
+      - cppcoreguidelines-avoid-c-arrays
+      - hicpp-avoid-c-arrays
+      - modernize-avoid-c-arrays

@@ -182,15 +182,20 @@ VS Code tasks are in `.vscode/tasks.json`.
 Useful tasks:
 
 ```text
-build: esp32 debug
-build: esp32 debug clean
-build: esp32 release
-export compile_commands
-package: esp32 debug
+build: esp32 debug no-mcuboot
+build: esp32 release no-mcuboot
+build: esp32 debug mcuboot
+build: esp32 release mcuboot
+export compile_commands: esp32 debug no-mcuboot
+package: esp32 debug no-mcuboot
 flash: esp32 mac
 monitor: esp32 uart
 check: format
 check: clang-tidy
+kb: build debug no-mcuboot
+kb: build release no-mcuboot
+kb: build debug mcuboot
+kb: build release mcuboot
 ```
 
 After a Docker build, export a host-friendly compile database for clangd:
@@ -198,6 +203,20 @@ After a Docker build, export a host-friendly compile database for clangd:
 ```bash
 ./scripts/export_compile_commands.sh --board esp32_oled --profile debug --boot no-mcuboot
 ```
+
+Recommended VS Code user keybindings:
+
+```json
+[
+  { "key": "f6", "command": "workbench.action.tasks.runTask", "args": "kb: build debug no-mcuboot" },
+  { "key": "shift+f6", "command": "workbench.action.tasks.runTask", "args": "kb: build release no-mcuboot" },
+  { "key": "f7", "command": "workbench.action.tasks.runTask", "args": "kb: build debug mcuboot" },
+  { "key": "shift+f7", "command": "workbench.action.tasks.runTask", "args": "kb: build release mcuboot" }
+]
+```
+
+VS Code stores keybindings in the user profile, not in workspace settings. The
+same snippet is committed at `.vscode/keybindings.json` as a project reference.
 
 ## Shell Commands
 

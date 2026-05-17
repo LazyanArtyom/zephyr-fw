@@ -6,14 +6,23 @@ Checks: >-
   modernize-*,
   readability-*,
   google-*,
+  -bugprone-branch-clone,
+  -cppcoreguidelines-avoid-c-arrays,
+  -google-readability-function-size,
+  -hicpp-avoid-c-arrays,
+  -modernize-avoid-c-arrays,
   -modernize-use-trailing-return-type,
+  -performance-no-int-to-ptr,
+  -readability-function-size,
   -readability-magic-numbers,
   -readability-redundant-access-specifiers,
+  -readability-simplify-boolean-expr,
   -readability-function-cognitive-complexity
 
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 FormatStyle: file
+SystemHeaders: false
 
 CheckOptions:
   - key: readability-identifier-naming.NamespaceCase
