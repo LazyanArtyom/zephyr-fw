@@ -15,11 +15,11 @@ config APP_BOARD_INFO
 
 config APP_HEARTBEAT_SERVICE
     bool "Enable heartbeat background service"
-    default y
+    default n
 
 config APP_DISPLAY
     bool "Enable display support"
     default n
-    depends on DISPLAY
+    depends on DISPLAY && CHARACTER_FRAMEBUFFER
 
 endmenu

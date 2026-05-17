@@ -1,11 +1,38 @@
 /*
  * ESP32 OLED board overlay.
  *
- * First milestone keeps OLED disabled.
- * Add I2C/OLED nodes here later.
+ * OLED:
+ *   controller: SSD1306
+ *   bus:        I2C
+ *   address:    0x3c
+ *   SDA:        GPIO21
+ *   SCL:        GPIO22
  */
 
 / {
     aliases {
+        display0 = &ssd1306;
+    };
+};
+
+&i2c0 {
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_STANDARD>;
+
+    ssd1306: ssd1306@3c {
+        compatible = "solomon,ssd1306";
+        reg = <0x3c>;
+
+        width = <128>;
+        height = <64>;
+
+        segment-offset = <0>;
+        page-offset = <0>;
+        display-offset = <0>;
+        multiplex-ratio = <63>;
+        prechargep = <0x22>;
+
+        segment-remap;
+        com-invdir;
     };
 };

@@ -6,6 +6,10 @@
 
 #include "heartbeat_service.hpp"
 
+#if defined(CONFIG_APP_DISPLAY)
+#include "display_service.hpp"
+#endif
+
 LOG_MODULE_REGISTER(app_main, CONFIG_LOG_DEFAULT_LEVEL);
 
 int main()
@@ -18,10 +22,16 @@ int main()
         return -1;
     }
 
-    LOG_INF("Zephyr Golden FW booted");
+    LOG_INF("Zephyr FW booted");
     LOG_INF("Board: %s", app::GetBoardName());
     LOG_INF("Version: %s", app::GetAppVersion());
     LOG_INF("Build profile: %s", app::GetBuildProfile());
+
+#if defined(CONFIG_APP_DISPLAY)
+    if (!app::InitializeDisplay()) {
+        LOG_WRN("display initialization failed");
+    }
+#endif
 
 #if defined(CONFIG_APP_HEARTBEAT_SERVICE)
     app::StartHeartbeatService();
