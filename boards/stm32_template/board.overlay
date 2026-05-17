@@ -1,0 +1,8 @@
+/*
+ * STM32 template board overlay.
+ */
+
+/ {
+    aliases {
+    };
+};

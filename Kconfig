@@ -1,0 +1,5 @@
+menu "Zephyr Golden FW"
+
+rsource "app/Kconfig"
+
+endmenu

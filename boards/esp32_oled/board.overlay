@@ -1,0 +1,11 @@
+/*
+ * ESP32 OLED board overlay.
+ *
+ * First milestone keeps OLED disabled.
+ * Add I2C/OLED nodes here later.
+ */
+
+/ {
+    aliases {
+    };
+};
