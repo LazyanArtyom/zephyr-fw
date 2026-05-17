@@ -16,6 +16,7 @@ The primary build entry point is:
 --app        Application profile label, currently main
 --display    auto, on, off
 --shell      auto, on, off
+--asserts    auto, on, off
 --package    Create dist package after build
 ```
 
@@ -46,6 +47,7 @@ configs/boot/<boot>.conf
 configs/features/display.conf or no_display.conf
 configs/features/shell.conf or no_shell.conf
 generated shell prompt config
+configs/features/asserts.conf or no_asserts.conf
 ```
 
 Later fragments intentionally override earlier fragments.

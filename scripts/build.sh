@@ -20,6 +20,7 @@ Options:
   --app <profile>             Application profile label (default: main)
   --display <mode>            Display feature: auto, on, off (default: auto)
   --shell <mode>              Shell feature: auto, on, off (default: auto)
+  --asserts <mode>            Global Zephyr asserts: auto, on, off (default: auto)
   --package                   Package artifacts after a successful build
   --list-boards               Show available board profiles
   --help                      Show this help
@@ -76,6 +77,7 @@ BOOT_MODE=""
 APP_PROFILE="main"
 DISPLAY_MODE="auto"
 SHELL_MODE="auto"
+ASSERTS_MODE="auto"
 DO_PACKAGE=0
 
 if [[ $# -gt 0 && "${1}" != --* && "${1}" != -* ]]; then
@@ -119,6 +121,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --shell)
             SHELL_MODE="${2:-}"
+            shift 2
+            ;;
+        --asserts)
+            ASSERTS_MODE="${2:-}"
             shift 2
             ;;
         --package)
@@ -237,6 +243,18 @@ case "${SHELL_MODE}" in
         ;;
 esac
 
+case "${ASSERTS_MODE}" in
+    auto)
+        RESOLVED_ASSERTS_MODE="off"
+        ;;
+    on|off)
+        RESOLVED_ASSERTS_MODE="${ASSERTS_MODE}"
+        ;;
+    *)
+        die "unknown asserts mode: ${ASSERTS_MODE} (valid: auto, on, off)"
+        ;;
+esac
+
 if [[ "${APP_PROFILE}" != "main" ]]; then
     APP_CONF="${PROJECT_ROOT}/configs/apps/${APP_PROFILE}.conf"
     [[ -f "${APP_CONF}" ]] || die "app profile config not found: ${APP_CONF}"
@@ -273,6 +291,11 @@ if [[ "${RESOLVED_SHELL_MODE}" == "on" ]]; then
 else
     add_conf_if_exists "${PROJECT_ROOT}/configs/features/no_shell.conf"
 fi
+if [[ "${RESOLVED_ASSERTS_MODE}" == "on" ]]; then
+    add_conf_if_exists "${PROJECT_ROOT}/configs/features/asserts.conf"
+else
+    add_conf_if_exists "${PROJECT_ROOT}/configs/features/no_asserts.conf"
+fi
 
 CONF_FILE_ARG="$(join_by_semicolon "${CONF_FILES[@]}")"
 
@@ -291,6 +314,7 @@ echo "Boot mode      : ${BOOT_MODE}"
 echo "App profile    : ${APP_PROFILE}"
 echo "Display        : ${RESOLVED_DISPLAY_MODE}"
 echo "Shell          : ${RESOLVED_SHELL_MODE}"
+echo "Asserts        : ${RESOLVED_ASSERTS_MODE}"
 echo "Build dir      : ${BUILD_DIR}"
 echo "Conf files     : ${CONF_FILE_ARG}"
 echo "Overlay        : ${BOARD_OVERLAY}"
