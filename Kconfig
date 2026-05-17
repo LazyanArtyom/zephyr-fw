@@ -1,15 +1,15 @@
-# Root Kconfig for Zephyr Golden FW.
+# Root Kconfig for Zephyr FW.
 #
 # Important:
 # Because this project provides its own Kconfig file, it must include
 # Zephyr's root Kconfig. Otherwise all Zephyr symbols like LOG, SHELL,
 # CPP, SERIAL, GPIO, etc. become undefined.
 
-mainmenu "Zephyr Golden FW"
+mainmenu "Zephyr FW"
 
 source "Kconfig.zephyr"
 
-menu "Zephyr Golden FW"
+menu "Zephyr FW"
 
 rsource "app/Kconfig"
 

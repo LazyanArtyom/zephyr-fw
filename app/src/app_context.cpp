@@ -1,20 +1,17 @@
-#include <app/app_context.hpp>
+#include <app/app_context.h>
 
 namespace app {
 
-Status AppContext::Initialize()
-{
+Status AppContext::Initialize() {
     initialized_ = true;
     return Status::kOk;
 }
 
-bool AppContext::IsInitialized() const
-{
+bool AppContext::IsInitialized() const {
     return initialized_;
 }
 
-AppContext& GetAppContext()
-{
+AppContext& GetAppContext() {
     static AppContext context;
     return context;
 }

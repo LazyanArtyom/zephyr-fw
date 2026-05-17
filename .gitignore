@@ -1,1 +1,16 @@
-/build
+build/
+dist/
+compile_commands.json
+.cache/
+.DS_Store
+CMakeUserPresets.json
+
+# Signing material. Keep production private keys out of the repository.
+keys/private/
+keys/**/*.pem
+keys/**/*.key
+keys/**/*.der
+!keys/README.md
+!keys/public/
+!keys/public/**
+!keys/public/README.md

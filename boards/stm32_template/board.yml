@@ -1,0 +1,11 @@
+profile: stm32_template
+display_name: STM32 template board
+status: placeholder
+zephyr_board:
+default_display: off
+default_boot: no-mcuboot
+serial_baud: 115200
+flash_runner:
+flash_chip:
+flash_offset:
+description: Placeholder profile for future STM32 board support.

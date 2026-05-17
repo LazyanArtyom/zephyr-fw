@@ -1,0 +1,151 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build: esp32 debug",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "debug",
+        "--boot",
+        "no-mcuboot",
+        "--mode",
+        "auto"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "build: esp32 debug clean",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "debug",
+        "--boot",
+        "no-mcuboot",
+        "--mode",
+        "clean"
+      ],
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "build: esp32 release",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/build.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "release",
+        "--boot",
+        "no-mcuboot",
+        "--mode",
+        "auto"
+      ],
+      "group": "build",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "export compile_commands",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/export_compile_commands.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "debug",
+        "--boot",
+        "no-mcuboot"
+      ],
+      "dependsOn": [
+        "build: esp32 debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "package: esp32 debug",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/package.sh",
+      "args": [
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "debug",
+        "--boot",
+        "no-mcuboot"
+      ],
+      "dependsOn": [
+        "build: esp32 debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "flash: esp32 mac",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/flash_esp32_mac.sh",
+      "args": [
+        "--port",
+        "/dev/cu.usbserial-210",
+        "--board",
+        "esp32_oled",
+        "--profile",
+        "debug",
+        "--boot",
+        "no-mcuboot"
+      ],
+      "dependsOn": [
+        "build: esp32 debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "monitor: esp32 uart",
+      "type": "shell",
+      "command": "picocom",
+      "args": [
+        "-b",
+        "115200",
+        "/dev/cu.usbserial-210"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "check: format",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/check_format.sh",
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "check: clang-tidy",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/run-clang-tidy.sh",
+      "args": [
+        "build/esp32_oled/debug/no-mcuboot"
+      ],
+      "dependsOn": [
+        "build: esp32 debug"
+      ],
+      "problemMatcher": [
+        "$gcc"
+      ]
+    }
+  ]
+}

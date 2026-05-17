@@ -4,8 +4,7 @@
 
 namespace {
 
-int CmdUptime(const shell* shell, size_t argc, char** argv)
-{
+int CmdUptime(const shell* shell, size_t argc, char** argv) {
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
 
@@ -13,8 +12,7 @@ int CmdUptime(const shell* shell, size_t argc, char** argv)
     return 0;
 }
 
-int CmdReboot(const shell* shell, size_t argc, char** argv)
-{
+int CmdReboot(const shell* shell, size_t argc, char** argv) {
     ARG_UNUSED(argc);
     ARG_UNUSED(argv);
 
@@ -26,11 +24,9 @@ int CmdReboot(const shell* shell, size_t argc, char** argv)
 
 }  // namespace
 
-SHELL_STATIC_SUBCMD_SET_CREATE(
-    system_subcommands,
-    SHELL_CMD(uptime, NULL, "Show system uptime.", CmdUptime),
-    SHELL_CMD(reboot, NULL, "Reboot the board.", CmdReboot),
-    SHELL_SUBCMD_SET_END
-);
+SHELL_STATIC_SUBCMD_SET_CREATE(system_subcommands,
+                               SHELL_CMD(uptime, NULL, "Show system uptime.", CmdUptime),
+                               SHELL_CMD(reboot, NULL, "Reboot the board.", CmdReboot),
+                               SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(system, &system_subcommands, "System commands.", NULL);

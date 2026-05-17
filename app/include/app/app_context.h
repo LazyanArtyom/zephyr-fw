@@ -1,12 +1,12 @@
-#ifndef APP_APP_CONTEXT_HPP_
-#define APP_APP_CONTEXT_HPP_
+#ifndef APP_APP_CONTEXT_H_
+#define APP_APP_CONTEXT_H_
 
-#include <app/status.hpp>
+#include <app/status.h>
 
 namespace app {
 
 class AppContext {
-public:
+   public:
     AppContext() = default;
 
     AppContext(const AppContext&) = delete;
@@ -15,7 +15,7 @@ public:
     [[nodiscard]] Status Initialize();
     [[nodiscard]] bool IsInitialized() const;
 
-private:
+   private:
     bool initialized_{false};
 };
 
@@ -23,4 +23,4 @@ AppContext& GetAppContext();
 
 }  // namespace app
 
-#endif  // APP_APP_CONTEXT_HPP_
+#endif  // APP_APP_CONTEXT_H_

@@ -1,5 +1,5 @@
-#ifndef APP_STATUS_HPP_
-#define APP_STATUS_HPP_
+#ifndef APP_STATUS_H_
+#define APP_STATUS_H_
 
 namespace app {
 
@@ -10,4 +10,4 @@ enum class Status {
 
 }  // namespace app
 
-#endif  // APP_STATUS_HPP_
+#endif  // APP_STATUS_H_

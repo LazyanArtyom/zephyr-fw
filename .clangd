@@ -1,0 +1,18 @@
+CompileFlags:
+  CompilationDatabase: .
+  Add:
+    - -D__CLANGD__
+  Remove:
+    - -fmodule-mapper=*
+    - -fdeps-format=*
+    - -fmodules-ts
+    - -mlongcalls
+    - -specs=*
+    - --param=*
+    - -fno-defer-pop
+    - -fno-reorder-functions
+    - -fstrict-volatile-bitfields
+    - -mtext-section-literals
+
+Diagnostics:
+  UnusedIncludes: Strict

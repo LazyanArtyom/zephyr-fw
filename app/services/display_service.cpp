@@ -1,5 +1,6 @@
-#include "display_service.hpp"
+#include "display_service.h"
 
+#include <app/board_info.h>
 #include <zephyr/device.h>
 #include <zephyr/display/cfb.h>
 #include <zephyr/kernel.h>
@@ -10,15 +11,13 @@ LOG_MODULE_REGISTER(display_service, CONFIG_LOG_DEFAULT_LEVEL);
 namespace app {
 namespace {
 
-const device* GetDisplayDevice()
-{
+const device* GetDisplayDevice() {
     return DEVICE_DT_GET(DT_ALIAS(display0));
 }
 
 }  // namespace
 
-bool InitializeDisplay()
-{
+bool InitializeDisplay() {
     const device* display = GetDisplayDevice();
 
     if (!device_is_ready(display)) {
@@ -39,8 +38,7 @@ bool InitializeDisplay()
     return true;
 }
 
-bool ShowHelloWorldOnDisplay()
-{
+bool ShowHelloWorldOnDisplay() {
     const device* display = GetDisplayDevice();
 
     if (!device_is_ready(display)) {
@@ -50,10 +48,10 @@ bool ShowHelloWorldOnDisplay()
 
     cfb_framebuffer_clear(display, false);
 
-    cfb_print(display, "Zephyr FW", 0, 0);
+    cfb_print(display, app::GetDisplayName(), 0, 0);
     cfb_print(display, "Hello World!", 0, 16);
-    cfb_print(display, "ESP32 OLED", 0, 32);
-    cfb_print(display, "v0.1.0 debug", 0, 48);
+    cfb_print(display, app::GetBoardProfile(), 0, 32);
+    cfb_print(display, app::GetAppVersion(), 0, 48);
 
     cfb_framebuffer_finalize(display);
     return true;

@@ -1,24 +1,36 @@
 # Zephyr FW
 
-A professional, generic Zephyr firmware reference project.
+Generic Zephyr firmware boilerplate for reusable embedded projects.
 
-This project is intentionally not tied to drones, swarms, UAVs, or any product-specific domain. It is a reusable base for embedded Zephyr applications.
+The project is intentionally generic and not tied to any product-specific
+domain. It is a small BSP/application platform that can be copied into future
+ESP32, STM32, nRF, or custom-board projects.
 
-## Goals
+## Identity
 
-- Clean multi-board project structure
-- Friendly board profile names
-- Future STM32, ESP32, nRF, and other board support
-- Board-specific peripherals through Devicetree overlays
-- Software features through Kconfig and `.conf` fragments
-- Zephyr shell/CLI over UART
-- Background service pattern
-- Optional future MCUboot support
-- Clean separation between app code, tools, services, board profiles, and scripts
+Project identity is centralized in:
 
-## Current validated board
+```text
+project.env
+```
 
-Project board profile:
+Current identity:
+
+```text
+Display name:     Zephyr FW
+Slug:             zephyr-fw
+Firmware name:    zephyr-fw
+CMake project:    zephyr_fw
+Shell prompt:     zephyr-fw:~$
+C++ namespace:    app
+Kconfig prefix:   APP_
+Version source:   VERSION
+Artifact pattern: zephyr-fw_<version>_<board>_<profile>_<boot>
+```
+
+## Current Board
+
+Friendly board profile:
 
 ```text
 esp32_oled
@@ -30,19 +42,20 @@ Zephyr board target:
 esp32_devkitc/esp32/procpu
 ```
 
-Current tested hardware:
+Validated hardware:
 
 ```text
 ESP32-WROOM-32 development board
 USB serial: /dev/cu.usbserial-210
-Baud rate: 115200
+UART shell: 115200 baud
+OLED: SSD1306, 128x64, I2C address 0x3c, SDA GPIO21, SCL GPIO22
 ```
 
-## Project layout
+## Layout
 
 ```text
 zephyr-fw/
-├── README.md
+├── project.env
 ├── VERSION
 ├── CMakeLists.txt
 ├── Kconfig
@@ -50,208 +63,139 @@ zephyr-fw/
 ├── app/
 │   ├── include/app/
 │   ├── src/
-│   ├── shell/
 │   ├── services/
+│   ├── shell/
 │   └── tools/
 ├── boards/
-│   ├── esp32_oled/
-│   └── stm32_template/
+│   └── <board_profile>/
+│       ├── board.yml
+│       ├── board.conf
+│       ├── board.overlay
+│       ├── debug.conf
+│       ├── release.conf
+│       └── flash.conf
 ├── configs/
+│   ├── boot/
+│   ├── features/
+│   └── profiles/
 ├── scripts/
-└── docs/
+├── docs/
+├── keys/
+└── partitions/
 ```
 
-## Build workflow
+## Build
 
-Build happens inside the Ubuntu Zephyr Docker environment.
+Builds are intended to run inside the Ubuntu Zephyr Docker environment.
 
-Flash and serial monitoring happen from macOS.
-
-```text
-Docker:
-  build firmware
-
-macOS:
-  flash ESP32
-  open serial terminal
-```
-
-## Build inside Docker
-
-Enter Docker, then go to the project:
+Debug development build:
 
 ```bash
-cd ~/Documents/projects/zephyr-fw
+./scripts/build.sh --board esp32_oled --profile debug --boot no-mcuboot
 ```
 
-Debug build:
+Incremental build:
 
 ```bash
-./scripts/build.sh esp32_oled debug
+./scripts/build.sh --board esp32_oled --profile debug --mode incremental
 ```
 
-Release build:
+Production-style MCUboot build scaffold:
 
 ```bash
-./scripts/build.sh esp32_oled release
+./scripts/build.sh --board esp32_oled --profile production --boot mcuboot
 ```
 
-Clean debug build:
+List board profiles:
 
 ```bash
-./scripts/build.sh esp32_oled debug clean
+./scripts/list_boards.sh
 ```
 
-Incremental debug build:
+## Flash From macOS
+
+Flashing is done from macOS because Docker Desktop does not cleanly expose the
+CH340 serial device into Linux containers.
+
+The flash script auto-detects `~/.venvs/esptool/bin/python` and falls back to
+`python3`.
 
 ```bash
-./scripts/build.sh esp32_oled debug incremental
+./scripts/flash_esp32_mac.sh \
+  --port /dev/cu.usbserial-210 \
+  --board esp32_oled \
+  --profile debug \
+  --boot no-mcuboot
 ```
 
-Default build mode is `auto`:
+Erase and then flash:
 
 ```bash
-./scripts/build.sh esp32_oled debug
+./scripts/flash_esp32_mac.sh --port /dev/cu.usbserial-210 --erase
 ```
 
-## Build modes
-
-```text
-auto
-  Let west decide whether pristine rebuild is needed.
-
-incremental
-  Do not force pristine rebuild. Best for normal .cpp/.hpp edits.
-
-clean
-  Force full pristine rebuild.
-
-pristine
-  Same as clean.
-```
-
-Recommended usage:
-
-```text
-Changed .cpp/.hpp:
-  ./scripts/build.sh esp32_oled debug incremental
-
-Changed .conf/.overlay/Kconfig/CMakeLists.txt/board settings:
-  ./scripts/build.sh esp32_oled debug auto
-
-Strange build issue:
-  ./scripts/build.sh esp32_oled debug clean
-```
-
-## Firmware output
-
-Debug firmware:
-
-```text
-build/esp32_oled/debug/zephyr/zephyr.bin
-```
-
-Release firmware:
-
-```text
-build/esp32_oled/release/zephyr/zephyr.bin
-```
-
-## macOS esptool setup
-
-Homebrew Python is externally managed, so use a dedicated virtual environment:
+Flash and open monitor:
 
 ```bash
-python3 -m venv ~/.venvs/esptool
-source ~/.venvs/esptool/bin/activate
-python -m pip install --upgrade pip
-python -m pip install esptool
-python -m esptool version
+./scripts/flash_esp32_mac.sh --port /dev/cu.usbserial-210 --monitor
 ```
 
-For future flashing sessions:
-
-```bash
-source ~/.venvs/esptool/bin/activate
-```
-
-To leave the environment:
-
-```bash
-deactivate
-```
-
-## Flash from macOS
-
-From macOS terminal:
-
-```bash
-cd ~/Documents/projects/zephyr-fw
-source ~/.venvs/esptool/bin/activate
-./scripts/flash_esp32_mac.sh /dev/cu.usbserial-210 esp32_oled debug
-```
-
-Flash release firmware:
-
-```bash
-./scripts/flash_esp32_mac.sh /dev/cu.usbserial-210 esp32_oled release
-```
-
-List available serial ports:
-
-```bash
-ls /dev/cu.*
-```
-
-Successful flashing should show:
-
-```text
-Hash of data verified.
-Hard resetting via RTS pin...
-```
-
-## Serial terminal from macOS
-
-Open serial terminal:
+## Serial Monitor
 
 ```bash
 picocom -b 115200 /dev/cu.usbserial-210
 ```
 
-Alternative:
+Exit `picocom` with `Ctrl-a`, then `Ctrl-x`.
+
+## Package
+
+Create a deterministic package under `dist/`:
 
 ```bash
-screen /dev/cu.usbserial-210 115200
+./scripts/package.sh --board esp32_oled --profile debug --boot no-mcuboot
 ```
 
-Exit `picocom`:
+Example output:
 
 ```text
-Ctrl-a
-Ctrl-x
+dist/zephyr-fw_0.1.0_esp32_oled_debug_no-mcuboot/
+├── zephyr.bin
+├── zephyr.elf
+├── zephyr.map
+├── firmware.meta.json
+├── firmware.sha256
+├── flash.sh
+└── README.txt
 ```
 
-## Shell prompt
+## Tooling
 
-The UART shell prompt is configured in:
+VS Code tasks are in `.vscode/tasks.json`.
+
+Useful tasks:
 
 ```text
-configs/shell.conf
+build: esp32 debug
+build: esp32 debug clean
+build: esp32 release
+export compile_commands
+package: esp32 debug
+flash: esp32 mac
+monitor: esp32 uart
+check: format
+check: clang-tidy
 ```
 
-Prompt setting:
-
-```conf
-CONFIG_SHELL_PROMPT_UART="zephyr-fw:~$ "
-```
-
-After changing shell config, rebuild and flash again:
+After a Docker build, export a host-friendly compile database for clangd:
 
 ```bash
-./scripts/build.sh esp32_oled debug clean
+./scripts/export_compile_commands.sh --board esp32_oled --profile debug --boot no-mcuboot
 ```
 
-## Available shell commands
+## Shell Commands
+
+Initial commands:
 
 ```text
 hello_world
@@ -262,160 +206,18 @@ system uptime
 system reboot
 ```
 
-Example:
+## More Docs
+
+Start with:
 
 ```text
-zephyr-fw:~$ hello_world
-Hello World from Zephyr FW!
-Board: esp32_devkitc/esp32/procpu
-Version: 0.1.0
-Build profile: debug
-```
-
-## Versioning
-
-Project version file:
-
-```text
-VERSION
-```
-
-Current format:
-
-```text
-VERSION_MAJOR = 0
-VERSION_MINOR = 1
-PATCHLEVEL = 0
-VERSION_TWEAK = 0
-EXTRAVERSION =
-```
-
-Runtime version string is currently defined in:
-
-```text
-CMakeLists.txt
-```
-
-Current value:
-
-```cmake
-set(APP_VERSION_STRING "0.1.0")
-```
-
-Keep both synchronized when changing versions.
-
-## Board profiles
-
-List supported board profiles:
-
-```bash
-./scripts/list_boards.sh
-```
-
-Current profiles:
-
-```text
-esp32_oled
-  Enabled. Maps to esp32_devkitc/esp32/procpu.
-
-stm32_template
-  Placeholder for future STM32 support.
-```
-
-## Design rules
-
-Do not hardcode board-specific pins or peripherals in application code.
-
-Use:
-
-```text
-Devicetree overlays
-  Hardware description: pins, buses, displays, sensors, LEDs.
-
-Kconfig and .conf fragments
-  Software feature selection.
-
-Board profiles
-  Friendly names and board-specific build configuration.
-
-Shell modules
-  User-facing commands.
-
-Services
-  Background work.
-
-Tools
-  Manually triggered utilities.
-```
-
-Application logic should stay portable across boards.
-
-## Important files
-
-```text
-CMakeLists.txt
-  Top-level Zephyr application CMake file.
-
-Kconfig
-  Root project Kconfig. Includes Zephyr Kconfig and project options.
-
-VERSION
-  Zephyr-compatible project version file.
-
-prj.conf
-  Common application configuration.
-
-configs/shell.conf
-  UART shell configuration.
-
-configs/debug.conf
-  Debug build configuration.
-
-configs/release.conf
-  Release build configuration.
-
-boards/esp32_oled/board.conf
-  ESP32 board profile configuration.
-
-boards/esp32_oled/board.overlay
-  ESP32 board-specific Devicetree overlay.
-
-scripts/build.sh
-  Main build script.
-
-scripts/flash_esp32_mac.sh
-  ESP32 flashing script for macOS.
-
-app/shell/
-  Zephyr shell command implementations.
-
-app/services/
-  Background services.
-
-app/tools/
-  Reusable command/tool logic.
-```
-
-## MCUboot
-
-Current flashing mode is direct application flashing:
-
-```text
-ESP32 ROM bootloader -> Zephyr application
-```
-
-Future production-style mode:
-
-```text
-ESP32 ROM bootloader -> MCUboot -> signed Zephyr application
-```
-
-Do not enable MCUboot until the base firmware structure is stable.
-
-## Clean project
-
-Remove build outputs:
-
-```bash
-./scripts/clean.sh
+docs/architecture.md
+docs/build_system.md
+docs/board_porting.md
+docs/boot_modes.md
+docs/packaging.md
+docs/versioning.md
+docs/vscode.md
+docs/coding_standard.md
+docs/release_process.md
 ```

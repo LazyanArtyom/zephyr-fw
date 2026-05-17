@@ -1,4 +1,4 @@
-#include "heartbeat_service.hpp"
+#include "heartbeat_service.h"
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -14,8 +14,7 @@ void HeartbeatHandler(k_work* work);
 
 K_WORK_DELAYABLE_DEFINE(heartbeat_work, HeartbeatHandler);
 
-void HeartbeatHandler(k_work* work)
-{
+void HeartbeatHandler(k_work* work) {
     ARG_UNUSED(work);
 
     LOG_INF("heartbeat: uptime=%lld ms", k_uptime_get());
@@ -24,8 +23,7 @@ void HeartbeatHandler(k_work* work)
 
 }  // namespace
 
-void StartHeartbeatService()
-{
+void StartHeartbeatService() {
     LOG_INF("starting heartbeat service");
     k_work_schedule(&heartbeat_work, kHeartbeatPeriod);
 }
