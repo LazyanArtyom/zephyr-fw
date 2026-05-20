@@ -2,7 +2,18 @@
 #include <platform/core/reset_info.h>
 #include <zephyr/shell/shell.h>
 
+#include <cerrno>
+#include <cstring>
+
 namespace {
+
+int PrintSystemHelp(const shell* shell) {
+    shell_print(shell, "Usage:");
+    shell_print(shell, "  system uptime");
+    shell_print(shell, "  system reset-reason");
+    shell_print(shell, "  system reboot");
+    return 0;
+}
 
 int CmdUptime(const shell* shell, size_t argc, char** argv) {
     (void)argc;
@@ -33,12 +44,27 @@ int CmdReboot(const shell* shell, size_t argc, char** argv) {
     return 0;
 }
 
+int CmdSystem(const shell* shell, size_t argc, char** argv) {
+    if (argc < 2) {
+        return PrintSystemHelp(shell);
+    }
+
+    if (std::strcmp(argv[1], "uptime") == 0) {
+        return CmdUptime(shell, argc - 1, &argv[1]);
+    }
+
+    if (std::strcmp(argv[1], "reset-reason") == 0) {
+        return CmdResetReason(shell, argc - 1, &argv[1]);
+    }
+
+    if (std::strcmp(argv[1], "reboot") == 0) {
+        return CmdReboot(shell, argc - 1, &argv[1]);
+    }
+
+    shell_error(shell, "unknown system command: %s", argv[1]);
+    return -EINVAL;
+}
+
 }  // namespace
 
-SHELL_STATIC_SUBCMD_SET_CREATE(system_subcommands,
-                               SHELL_CMD(uptime, NULL, "Show system uptime.", CmdUptime),
-                               SHELL_CMD(reset_reason, NULL, "Show reset reason.", CmdResetReason),
-                               SHELL_CMD(reboot, NULL, "Reboot the board.", CmdReboot),
-                               SHELL_SUBCMD_SET_END);
-
-SHELL_CMD_REGISTER(system, &system_subcommands, "System commands.", NULL);
+SHELL_CMD_ARG_REGISTER(system, NULL, "System commands.", CmdSystem, 1, 1);

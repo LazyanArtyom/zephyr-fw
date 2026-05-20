@@ -20,6 +20,10 @@ void PrintBuild(const shell* shell) {
     shell_print(shell, "Git commit: %s%s", board_info.git_commit(),
                 board_info.is_git_dirty() ? " (dirty)" : "");
     shell_print(shell, "Built: %s", board_info.build_timestamp());
+    shell_print(shell, "Zephyr version: %s", board_info.zephyr_version());
+    shell_print(shell, "Toolchain: %s", board_info.toolchain_variant());
+    shell_print(shell, "SDK path: %s", board_info.zephyr_sdk_install_dir());
+    shell_print(shell, "Compiler: %s %s", board_info.compiler_id(), board_info.compiler_version());
 }
 
 int CmdInfo(const shell* shell, size_t argc, char** argv) {
@@ -35,6 +39,7 @@ int CmdInfo(const shell* shell, size_t argc, char** argv) {
     PrintVersion(shell);
     shell_print(shell, "Board profile: %s", board_info.board_profile());
     shell_print(shell, "Zephyr board: %s", board_info.zephyr_board_target());
+    shell_print(shell, "SoC: %s", board_info.soc_name());
     PrintBuild(shell);
     shell_print(shell, "Uptime: %lld ms",
                 static_cast<long long>(platform::Clock::UptimeMilliseconds()));
