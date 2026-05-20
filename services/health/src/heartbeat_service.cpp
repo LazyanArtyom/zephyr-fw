@@ -1,3 +1,4 @@
+#include <platform/core/clock.h>
 #include <services/health/heartbeat_service.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -16,7 +17,8 @@ K_WORK_DELAYABLE_DEFINE(heartbeat_work, HeartbeatHandler);
 void HeartbeatHandler(k_work* work) {
     ARG_UNUSED(work);
 
-    LOG_INF("heartbeat: uptime=%lld ms", k_uptime_get());
+    LOG_INF("heartbeat: uptime=%lld ms",
+            static_cast<long long>(platform::Clock::UptimeMilliseconds()));
     k_work_schedule(&heartbeat_work, kHeartbeatPeriod);
 }
 

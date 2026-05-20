@@ -1,24 +1,35 @@
-#include <zephyr/kernel.h>
+#include <platform/core/clock.h>
+#include <platform/core/reset_info.h>
 #include <zephyr/shell/shell.h>
-#include <zephyr/sys/reboot.h>
 
 namespace {
 
 int CmdUptime(const shell* shell, size_t argc, char** argv) {
-    ARG_UNUSED(argc);
-    ARG_UNUSED(argv);
+    (void)argc;
+    (void)argv;
 
-    shell_print(shell, "Uptime: %lld ms", k_uptime_get());
+    shell_print(shell, "Uptime: %lld ms",
+                static_cast<long long>(platform::Clock::UptimeMilliseconds()));
+    return 0;
+}
+
+int CmdResetReason(const shell* shell, size_t argc, char** argv) {
+    (void)argc;
+    (void)argv;
+
+    const platform::ResetInfo reset_info = platform::ResetInfo::Current();
+
+    shell_print(shell, "Reset reason: %s", reset_info.reason_string());
     return 0;
 }
 
 int CmdReboot(const shell* shell, size_t argc, char** argv) {
-    ARG_UNUSED(argc);
-    ARG_UNUSED(argv);
+    (void)argc;
+    (void)argv;
 
     shell_print(shell, "Rebooting...");
-    k_sleep(K_MSEC(100));
-    sys_reboot(SYS_REBOOT_COLD);
+    platform::Clock::SleepMilliseconds(100);
+    platform::ResetInfo::RequestColdReboot();
     return 0;
 }
 
@@ -26,6 +37,7 @@ int CmdReboot(const shell* shell, size_t argc, char** argv) {
 
 SHELL_STATIC_SUBCMD_SET_CREATE(system_subcommands,
                                SHELL_CMD(uptime, NULL, "Show system uptime.", CmdUptime),
+                               SHELL_CMD(reset_reason, NULL, "Show reset reason.", CmdResetReason),
                                SHELL_CMD(reboot, NULL, "Reboot the board.", CmdReboot),
                                SHELL_SUBCMD_SET_END);
 

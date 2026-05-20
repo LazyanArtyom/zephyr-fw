@@ -117,6 +117,12 @@ target_include_directories(app PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}/generated/include"
 )
 
+target_compile_features(app PRIVATE cxx_std_20)
+target_compile_options(app PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+)
+
 add_subdirectory(platform)
 add_subdirectory(services)
 add_subdirectory(commands)

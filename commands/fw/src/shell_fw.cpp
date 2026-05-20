@@ -1,50 +1,57 @@
 #include <platform/board/board_info.h>
-#include <zephyr/kernel.h>
+#include <platform/core/clock.h>
 #include <zephyr/shell/shell.h>
 
 namespace {
 
 void PrintVersion(const shell* shell) {
-    shell_print(shell, "Version: %s%s", platform::board::GetFirmwareVersion(),
-                platform::board::IsGitDirty() ? "-dirty" : "");
+    const platform::BoardInfo& board_info = platform::BoardInfo::Current();
+
+    shell_print(shell, "Version: %s%s", board_info.firmware_version(),
+                board_info.is_git_dirty() ? "-dirty" : "");
 }
 
 void PrintBuild(const shell* shell) {
-    shell_print(shell, "Build profile: %s", platform::board::GetBuildProfile());
-    shell_print(shell, "Boot mode: %s", platform::board::GetBootMode());
-    shell_print(shell, "Display mode: %s", platform::board::GetDisplayMode());
-    shell_print(shell, "Git commit: %s%s", platform::board::GetGitCommit(),
-                platform::board::IsGitDirty() ? " (dirty)" : "");
-    shell_print(shell, "Built: %s", platform::board::GetBuildTimestamp());
+    const platform::BoardInfo& board_info = platform::BoardInfo::Current();
+
+    shell_print(shell, "Build profile: %s", board_info.build_profile());
+    shell_print(shell, "Boot mode: %s", board_info.boot_mode());
+    shell_print(shell, "Display mode: %s", board_info.display_mode());
+    shell_print(shell, "Git commit: %s%s", board_info.git_commit(),
+                board_info.is_git_dirty() ? " (dirty)" : "");
+    shell_print(shell, "Built: %s", board_info.build_timestamp());
 }
 
 int CmdInfo(const shell* shell, size_t argc, char** argv) {
-    ARG_UNUSED(argc);
-    ARG_UNUSED(argv);
+    (void)argc;
+    (void)argv;
 
-    shell_print(shell, "Firmware: %s", platform::board::GetDisplayName());
-    shell_print(shell, "Name: %s", platform::board::GetFirmwareName());
-    shell_print(shell, "Slug: %s", platform::board::GetFirmwareSlug());
-    shell_print(shell, "Vendor: %s", platform::board::GetVendorName());
+    const platform::BoardInfo& board_info = platform::BoardInfo::Current();
+
+    shell_print(shell, "Firmware: %s", board_info.display_name());
+    shell_print(shell, "Name: %s", board_info.firmware_name());
+    shell_print(shell, "Slug: %s", board_info.firmware_slug());
+    shell_print(shell, "Vendor: %s", board_info.vendor_name());
     PrintVersion(shell);
-    shell_print(shell, "Board profile: %s", platform::board::GetBoardProfile());
-    shell_print(shell, "Zephyr board: %s", platform::board::GetZephyrBoardTarget());
+    shell_print(shell, "Board profile: %s", board_info.board_profile());
+    shell_print(shell, "Zephyr board: %s", board_info.zephyr_board_target());
     PrintBuild(shell);
-    shell_print(shell, "Uptime: %lld ms", k_uptime_get());
+    shell_print(shell, "Uptime: %lld ms",
+                static_cast<long long>(platform::Clock::UptimeMilliseconds()));
     return 0;
 }
 
 int CmdVersion(const shell* shell, size_t argc, char** argv) {
-    ARG_UNUSED(argc);
-    ARG_UNUSED(argv);
+    (void)argc;
+    (void)argv;
 
     PrintVersion(shell);
     return 0;
 }
 
 int CmdBuild(const shell* shell, size_t argc, char** argv) {
-    ARG_UNUSED(argc);
-    ARG_UNUSED(argv);
+    (void)argc;
+    (void)argv;
 
     PrintBuild(shell);
     return 0;
