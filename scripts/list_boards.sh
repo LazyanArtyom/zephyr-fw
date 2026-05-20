@@ -53,5 +53,5 @@ Examples:
 
   ./scripts/build.sh --board esp32_oled --profile debug
   ./scripts/build.sh --board esp32_oled --profile release --mode incremental
-  ./scripts/build.sh --board esp32_oled --profile production --boot mcuboot --package
+  ./scripts/build.sh --board esp32_oled --profile production --boot mcuboot
 EOF

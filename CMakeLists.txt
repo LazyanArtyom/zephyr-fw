@@ -58,7 +58,6 @@ project(${APP_CMAKE_PROJECT_NAME} VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MIN
 set(APP_BUILD_PROFILE "${APP_BUILD_PROFILE}" CACHE STRING "Application build profile")
 set(APP_BOARD_PROFILE "${APP_BOARD_PROFILE}" CACHE STRING "Friendly board profile")
 set(APP_BOOT_MODE "${APP_BOOT_MODE}" CACHE STRING "Boot mode: no-mcuboot or mcuboot")
-set(APP_APP_PROFILE "${APP_APP_PROFILE}" CACHE STRING "Application profile")
 set(APP_DISPLAY_MODE "${APP_DISPLAY_MODE}" CACHE STRING "Display mode: on, off, or auto")
 
 if(NOT APP_BUILD_PROFILE)
@@ -72,9 +71,6 @@ if(NOT APP_BOARD_PROFILE)
 endif()
 if(NOT APP_BOOT_MODE)
     set(APP_BOOT_MODE "unknown")
-endif()
-if(NOT APP_APP_PROFILE)
-    set(APP_APP_PROFILE "main")
 endif()
 if(NOT APP_DISPLAY_MODE)
     set(APP_DISPLAY_MODE "auto")
@@ -112,8 +108,8 @@ endif()
 string(TIMESTAMP APP_BUILD_TIMESTAMP "%Y-%m-%dT%H:%M:%SZ" UTC)
 
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/app_metadata.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/generated/include/app/app_metadata.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/firmware_metadata.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/include/platform/board/firmware_metadata.h"
     @ONLY
 )
 
@@ -121,4 +117,7 @@ target_include_directories(app PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}/generated/include"
 )
 
+add_subdirectory(platform)
+add_subdirectory(services)
+add_subdirectory(commands)
 add_subdirectory(app)

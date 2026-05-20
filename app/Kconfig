@@ -1,23 +1,15 @@
-menu "Application"
+menu "Firmware Platform"
 
-config APP_SHELL
-    bool "Enable application shell commands"
+config FW_SHELL
+    bool "Enable firmware shell commands"
     default y
     depends on SHELL
 
-config APP_HELLO_TOOL
-    bool "Enable hello_world shell tool"
-    default y
-
-config APP_BOARD_INFO
-    bool "Enable board information helpers"
-    default y
-
-config APP_HEARTBEAT_SERVICE
-    bool "Enable heartbeat background service"
+config FW_HEALTH_HEARTBEAT
+    bool "Enable heartbeat health service"
     default n
 
-config APP_DISPLAY
+config FW_DISPLAY
     bool "Enable display support"
     default n
     depends on DISPLAY && CHARACTER_FRAMEBUFFER

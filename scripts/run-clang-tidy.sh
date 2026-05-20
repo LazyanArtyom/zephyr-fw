@@ -196,8 +196,9 @@ collect_project_sources() {
             [[ -n "${file_path}" ]] || continue
             case "${file_path}" in
                 "${PROJECT_ROOT}/app/"*|\
-                "${PROJECT_ROOT}/apps/"*|\
-                "${PROJECT_ROOT}/common/"*|\
+                "${PROJECT_ROOT}/commands/"*|\
+                "${PROJECT_ROOT}/platform/"*|\
+                "${PROJECT_ROOT}/services/"*|\
                 "${PROJECT_ROOT}/tests/"*)
                     ;;
                 *)
@@ -216,7 +217,7 @@ run_single_file() {
     local file_path="$2"
     local header_filter
 
-    header_filter="^${PROJECT_ROOT}/(app|apps|common|tests)/"
+    header_filter="^${PROJECT_ROOT}/(app|commands|platform|services|tests)/"
 
     clang-tidy \
         "${file_path}" \

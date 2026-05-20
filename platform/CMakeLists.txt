@@ -1,0 +1,6 @@
+add_subdirectory(core)
+add_subdirectory(board)
+add_subdirectory(settings)
+add_subdirectory(i2c)
+add_subdirectory(shell)
+add_subdirectory(storage)

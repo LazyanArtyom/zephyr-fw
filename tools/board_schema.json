@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Zephyr FW board profile",
+  "type": "object",
+  "required": [
+    "profile",
+    "display_name",
+    "status",
+    "zephyr_board",
+    "default_display",
+    "default_boot",
+    "serial_baud"
+  ],
+  "properties": {
+    "profile": { "type": "string" },
+    "display_name": { "type": "string" },
+    "status": { "enum": ["enabled", "placeholder", "disabled"] },
+    "zephyr_board": { "type": "string" },
+    "default_display": { "enum": ["on", "off"] },
+    "default_boot": { "enum": ["no-mcuboot", "mcuboot"] },
+    "serial_baud": { "type": "integer" },
+    "flash_runner": { "type": "string" },
+    "flash_chip": { "type": "string" },
+    "flash_offset": { "type": "string" },
+    "description": { "type": "string" }
+  },
+  "additionalProperties": true
+}

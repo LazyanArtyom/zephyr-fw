@@ -94,12 +94,6 @@ Debug development build:
 ./scripts/build.sh --board esp32_oled --profile debug --boot no-mcuboot
 ```
 
-Debug build with global Zephyr assertions enabled:
-
-```bash
-./scripts/build.sh --board esp32_oled --profile debug --boot no-mcuboot --asserts on
-```
-
 Incremental build:
 
 ```bash

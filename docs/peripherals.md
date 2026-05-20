@@ -14,11 +14,5 @@ SCL:     GPIO22
 Alias:   display0
 ```
 
-Display support is optional:
-
-```bash
-./scripts/build.sh --board esp32_oled --display on
-./scripts/build.sh --board esp32_oled --display off
-```
-
-Application modules must compile when display support is disabled.
+Display support is selected by board profile metadata and board config
+fragments. Keep application modules buildable when display support is disabled.

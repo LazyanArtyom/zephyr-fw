@@ -12,7 +12,11 @@ files=()
 while IFS= read -r file_path; do
     files+=("${file_path}")
 done < <(
-    find "${PROJECT_ROOT}/app" \
+    find \
+        "${PROJECT_ROOT}/app" \
+        "${PROJECT_ROOT}/platform" \
+        "${PROJECT_ROOT}/services" \
+        "${PROJECT_ROOT}/commands" \
         -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.c' \) \
         | sort
 )

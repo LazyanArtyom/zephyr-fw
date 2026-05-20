@@ -30,9 +30,5 @@ Static analysis:
 ```
 
 Global Zephyr assertions are disabled by default to avoid the intentional CMake
-warning and keep routine debug builds quiet. Enable them explicitly for focused
-bring-up:
-
-```bash
-./scripts/build.sh --board esp32_oled --profile debug --boot no-mcuboot --asserts on
-```
+warning and keep routine debug builds quiet. Enable them in a focused profile or
+temporary config fragment during bring-up.

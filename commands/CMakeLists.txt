@@ -1,0 +1,5 @@
+add_subdirectory(board_info)
+add_subdirectory(settings)
+add_subdirectory(i2cdetect)
+add_subdirectory(system)
+add_subdirectory(fw)

@@ -2,10 +2,9 @@
 
 Display support is optional and controlled at build time:
 
-```bash
-./scripts/build.sh --board esp32_oled --display on
-./scripts/build.sh --board esp32_oled --display off
-```
+Display support is selected by the board profile. Set `default_display` in
+`boards/<board>/board.yml` and keep the actual driver/Kconfig selections in
+`boards/<board>/board.conf`.
 
 The display service uses the `display0` devicetree alias. Boards without a
 display should leave `default_display: off` in `board.yml` and disable

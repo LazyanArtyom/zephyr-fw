@@ -10,24 +10,19 @@ usage() {
     cat <<EOF
 Usage:
   $0 --board <profile> [options]
-  $0 <profile> [debug|release|production] [auto|clean|incremental]
+  $0 <profile> [debug|release|production] [auto|clean|pristine|incremental|no]
 
 Options:
   --board, -b <profile>       Board profile from boards/<profile>/board.yml
   --profile, -p <profile>     Build profile: debug, release, production (default: debug)
   --mode, -m <mode>           Build mode: auto, clean, pristine, incremental, no (default: auto)
   --boot <mode>               Boot mode: no-mcuboot, mcuboot (default: board.yml)
-  --app <profile>             Application profile label (default: main)
-  --display <mode>            Display feature: auto, on, off (default: auto)
-  --shell <mode>              Shell feature: auto, on, off (default: auto)
-  --asserts <mode>            Global Zephyr asserts: auto, on, off (default: auto)
-  --package                   Package artifacts after a successful build
   --list-boards               Show available board profiles
   --help                      Show this help
 
 Examples:
   $0 --board esp32_oled --profile debug --boot no-mcuboot
-  $0 --board esp32_oled --profile production --boot mcuboot --display off --shell off --package
+  $0 --board esp32_oled --profile production --boot mcuboot
   $0 esp32_oled debug incremental
 EOF
 }
@@ -70,15 +65,88 @@ escape_kconfig_string() {
     printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
+west_supports_build() {
+    "${WEST_EXE}" "$@" build -h >/dev/null 2>&1
+}
+
+resolve_west_executable() {
+    local candidate
+    local candidates=()
+
+    if [[ -n "${WEST_BIN:-}" ]]; then
+        candidates+=("${WEST_BIN}")
+    fi
+
+    if [[ -n "${ZEPHYR_BASE:-}" ]]; then
+        candidates+=("${ZEPHYR_BASE}/../.venv/bin/west")
+    fi
+
+    candidates+=(
+        "${PROJECT_ROOT}/../zephyrproject/.venv/bin/west"
+        "${PROJECT_ROOT}/../../zephyrproject/.venv/bin/west"
+        "${HOME}/Documents/projects/zephyrproject/.venv/bin/west"
+        "${HOME}/Documents/zephyrproject/.venv/bin/west"
+        "${HOME}/zephyrproject/.venv/bin/west"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [[ -x "${candidate}" ]]; then
+            WEST_EXE="${candidate}"
+            return
+        fi
+    done
+
+    if command -v west >/dev/null 2>&1; then
+        WEST_EXE="$(command -v west)"
+        return
+    fi
+
+    die "west not found. Source the Zephyr environment or set WEST_BIN=/path/to/west."
+}
+
+resolve_west_command() {
+    resolve_west_executable
+
+    if west_supports_build; then
+        WEST_CMD=("${WEST_EXE}")
+        return
+    fi
+
+    if [[ -n "${ZEPHYR_BASE:-}" ]]; then
+        if west_supports_build -z "${ZEPHYR_BASE}"; then
+            WEST_CMD=("${WEST_EXE}" -z "${ZEPHYR_BASE}")
+            return
+        fi
+    fi
+
+    local candidate
+    local candidates=(
+        "${PROJECT_ROOT}/../zephyrproject/zephyr"
+        "${PROJECT_ROOT}/../zephyr"
+        "${PROJECT_ROOT}/../../zephyrproject/zephyr"
+        "${HOME}/Documents/projects/zephyrproject/zephyr"
+        "${HOME}/Documents/zephyrproject/zephyr"
+        "${HOME}/zephyrproject/zephyr"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        [[ -d "${candidate}" ]] || continue
+        if west_supports_build -z "${candidate}"; then
+            WEST_CMD=("${WEST_EXE}" -z "${candidate}")
+            export ZEPHYR_BASE="${candidate}"
+            return
+        fi
+    done
+
+    die "west build is not available. Activate the Zephyr venv, set WEST_BIN, or set ZEPHYR_BASE to your Zephyr checkout."
+}
+
 BOARD_PROFILE=""
 BUILD_PROFILE="debug"
 BUILD_MODE="auto"
 BOOT_MODE=""
-APP_PROFILE="main"
-DISPLAY_MODE="auto"
-SHELL_MODE="auto"
-ASSERTS_MODE="auto"
-DO_PACKAGE=0
+WEST_EXE=""
+WEST_CMD=()
 
 if [[ $# -gt 0 && "${1}" != --* && "${1}" != -* ]]; then
     BOARD_PROFILE="$1"
@@ -96,40 +164,24 @@ fi
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --board|-b)
+            [[ $# -ge 2 && -n "${2:-}" ]] || die "$1 requires a board profile"
             BOARD_PROFILE="${2:-}"
             shift 2
             ;;
         --profile|-p)
+            [[ $# -ge 2 && -n "${2:-}" ]] || die "$1 requires a build profile"
             BUILD_PROFILE="${2:-}"
             shift 2
             ;;
         --mode|-m)
+            [[ $# -ge 2 && -n "${2:-}" ]] || die "$1 requires a build mode"
             BUILD_MODE="${2:-}"
             shift 2
             ;;
         --boot)
+            [[ $# -ge 2 && -n "${2:-}" ]] || die "$1 requires a boot mode"
             BOOT_MODE="${2:-}"
             shift 2
-            ;;
-        --app)
-            APP_PROFILE="${2:-}"
-            shift 2
-            ;;
-        --display)
-            DISPLAY_MODE="${2:-}"
-            shift 2
-            ;;
-        --shell)
-            SHELL_MODE="${2:-}"
-            shift 2
-            ;;
-        --asserts)
-            ASSERTS_MODE="${2:-}"
-            shift 2
-            ;;
-        --package)
-            DO_PACKAGE=1
-            shift
             ;;
         --list-boards)
             "${PROJECT_ROOT}/scripts/list_boards.sh"
@@ -203,70 +255,37 @@ case "${BOOT_MODE}" in
         ;;
 esac
 
-case "${DISPLAY_MODE}" in
-    auto)
-        RESOLVED_DISPLAY_MODE="${DEFAULT_DISPLAY:-off}"
-        ;;
-    on|off)
-        RESOLVED_DISPLAY_MODE="${DISPLAY_MODE}"
-        ;;
-    *)
-        die "unknown display mode: ${DISPLAY_MODE} (valid: auto, on, off)"
-        ;;
-esac
-
-case "${RESOLVED_DISPLAY_MODE}" in
+case "${DEFAULT_DISPLAY:-off}" in
     on)
         DISPLAY_CONF="${PROJECT_ROOT}/configs/features/display.conf"
+        DISPLAY_MODE="on"
         ;;
     off)
         DISPLAY_CONF="${PROJECT_ROOT}/configs/features/no_display.conf"
+        DISPLAY_MODE="off"
         ;;
     *)
-        die "board default_display must be on or off, got: ${RESOLVED_DISPLAY_MODE}"
+        die "board default_display must be on or off, got: ${DEFAULT_DISPLAY}"
         ;;
 esac
 
-case "${SHELL_MODE}" in
-    auto)
-        if [[ "${BUILD_PROFILE}" == "production" ]]; then
-            RESOLVED_SHELL_MODE="off"
-        else
-            RESOLVED_SHELL_MODE="on"
-        fi
-        ;;
-    on|off)
-        RESOLVED_SHELL_MODE="${SHELL_MODE}"
-        ;;
-    *)
-        die "unknown shell mode: ${SHELL_MODE} (valid: auto, on, off)"
-        ;;
-esac
-
-case "${ASSERTS_MODE}" in
-    auto)
-        RESOLVED_ASSERTS_MODE="off"
-        ;;
-    on|off)
-        RESOLVED_ASSERTS_MODE="${ASSERTS_MODE}"
-        ;;
-    *)
-        die "unknown asserts mode: ${ASSERTS_MODE} (valid: auto, on, off)"
-        ;;
-esac
-
-if [[ "${APP_PROFILE}" != "main" ]]; then
-    APP_CONF="${PROJECT_ROOT}/configs/apps/${APP_PROFILE}.conf"
-    [[ -f "${APP_CONF}" ]] || die "app profile config not found: ${APP_CONF}"
+if [[ "${BUILD_PROFILE}" == "production" ]]; then
+    SHELL_MODE="off"
+else
+    SHELL_MODE="on"
 fi
+
+ASSERTS_MODE="off"
 
 BUILD_DIR="${PROJECT_ROOT}/build/${BOARD_PROFILE}/${BUILD_PROFILE}/${BOOT_MODE}"
 GENERATED_CONF_DIR="${PROJECT_ROOT}/build/generated-configs/${BOARD_PROFILE}/${BUILD_PROFILE}/${BOOT_MODE}"
 mkdir -p "${GENERATED_CONF_DIR}"
 
 GENERATED_SHELL_PROMPT_CONF="${GENERATED_CONF_DIR}/shell_prompt.conf"
-printf 'CONFIG_SHELL_PROMPT_UART="%s"\n' "$(escape_kconfig_string "${APP_SHELL_PROMPT}")" \
-    > "${GENERATED_SHELL_PROMPT_CONF}"
+if [[ "${SHELL_MODE}" == "on" ]]; then
+    printf 'CONFIG_SHELL_PROMPT_UART="%s"\n' "$(escape_kconfig_string "${APP_SHELL_PROMPT}")" \
+        > "${GENERATED_SHELL_PROMPT_CONF}"
+fi
 
 COMMON_CONF="${PROJECT_ROOT}/prj.conf"
 LOGGING_CONF="${PROJECT_ROOT}/configs/features/logging.conf"
@@ -282,20 +301,13 @@ add_conf_if_exists "${PROFILE_CONF}"
 add_conf_if_exists "${BOARD_PROFILE_CONF}"
 add_conf_if_exists "${BOOT_CONF}"
 add_conf_if_exists "${DISPLAY_CONF}"
-if [[ "${APP_PROFILE}" != "main" ]]; then
-    add_conf_if_exists "${APP_CONF}"
-fi
-if [[ "${RESOLVED_SHELL_MODE}" == "on" ]]; then
+if [[ "${SHELL_MODE}" == "on" ]]; then
     add_conf_if_exists "${PROJECT_ROOT}/configs/features/shell.conf"
     add_conf_if_exists "${GENERATED_SHELL_PROMPT_CONF}"
 else
     add_conf_if_exists "${PROJECT_ROOT}/configs/features/no_shell.conf"
 fi
-if [[ "${RESOLVED_ASSERTS_MODE}" == "on" ]]; then
-    add_conf_if_exists "${PROJECT_ROOT}/configs/features/asserts.conf"
-else
-    add_conf_if_exists "${PROJECT_ROOT}/configs/features/no_asserts.conf"
-fi
+add_conf_if_exists "${PROJECT_ROOT}/configs/features/no_asserts.conf"
 
 CONF_FILE_ARG="$(join_by_semicolon "${CONF_FILES[@]}")"
 
@@ -304,6 +316,8 @@ if [[ "${BOOT_MODE}" == "mcuboot" ]]; then
     WEST_ARGS+=(--sysbuild)
 fi
 
+resolve_west_command
+
 echo "Project root   : ${PROJECT_ROOT}"
 echo "Firmware       : ${APP_FIRMWARE_NAME}"
 echo "Board profile  : ${BOARD_PROFILE}"
@@ -311,18 +325,16 @@ echo "Zephyr board   : ${ZEPHYR_BOARD}"
 echo "Build profile  : ${BUILD_PROFILE}"
 echo "Build mode     : ${BUILD_MODE}"
 echo "Boot mode      : ${BOOT_MODE}"
-echo "App profile    : ${APP_PROFILE}"
-echo "Display        : ${RESOLVED_DISPLAY_MODE}"
-echo "Shell          : ${RESOLVED_SHELL_MODE}"
-echo "Asserts        : ${RESOLVED_ASSERTS_MODE}"
+echo "Display        : ${DISPLAY_MODE} (from board.yml)"
+echo "Shell          : ${SHELL_MODE} (profile policy)"
+echo "Asserts        : ${ASSERTS_MODE} (profile policy)"
 echo "Build dir      : ${BUILD_DIR}"
 echo "Conf files     : ${CONF_FILE_ARG}"
 echo "Overlay        : ${BOARD_OVERLAY}"
+echo "West command   : ${WEST_CMD[*]}"
 echo
 
-command -v west >/dev/null 2>&1 || die "west not found. Run this inside the Zephyr Docker/west environment."
-
-west "${WEST_ARGS[@]}" "${PRISTINE_ARGS[@]}" \
+"${WEST_CMD[@]}" "${WEST_ARGS[@]}" "${PRISTINE_ARGS[@]}" \
     -b "${ZEPHYR_BOARD}" \
     -d "${BUILD_DIR}" \
     "${PROJECT_ROOT}" \
@@ -332,19 +344,10 @@ west "${WEST_ARGS[@]}" "${PRISTINE_ARGS[@]}" \
     -DAPP_BUILD_PROFILE="${BUILD_PROFILE}" \
     -DAPP_BOARD_PROFILE="${BOARD_PROFILE}" \
     -DAPP_BOOT_MODE="${BOOT_MODE}" \
-    -DAPP_APP_PROFILE="${APP_PROFILE}" \
-    -DAPP_DISPLAY_MODE="${RESOLVED_DISPLAY_MODE}" \
+    -DAPP_DISPLAY_MODE="${DISPLAY_MODE}" \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 echo
 echo "Build complete:"
 echo "  ${BUILD_DIR}/zephyr/zephyr.bin"
 echo "  ${BUILD_DIR}/zephyr/zephyr.elf"
-
-if [[ "${DO_PACKAGE}" -eq 1 ]]; then
-    "${PROJECT_ROOT}/scripts/package.sh" \
-        --board "${BOARD_PROFILE}" \
-        --profile "${BUILD_PROFILE}" \
-        --boot "${BOOT_MODE}" \
-        --build-dir "${BUILD_DIR}"
-fi

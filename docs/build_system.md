@@ -13,12 +13,12 @@ The primary build entry point is:
 --profile    debug, release, production
 --mode       auto, clean, pristine, incremental, no
 --boot       no-mcuboot, mcuboot
---app        Application profile label, currently main
---display    auto, on, off
---shell      auto, on, off
---asserts    auto, on, off
---package    Create dist package after build
 ```
+
+Board features are selected by `boards/<board>/board.yml`,
+`boards/<board>/board.conf`, and profile/config fragments. Use
+`scripts/package.sh` after a successful build when you need distributable
+artifacts.
 
 ## Output Layout
 
@@ -47,7 +47,7 @@ configs/boot/<boot>.conf
 configs/features/display.conf or no_display.conf
 configs/features/shell.conf or no_shell.conf
 generated shell prompt config
-configs/features/asserts.conf or no_asserts.conf
+configs/features/no_asserts.conf
 ```
 
 Later fragments intentionally override earlier fragments.
