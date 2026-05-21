@@ -1,6 +1,8 @@
 #ifndef PLATFORM_CORE_RESET_INFO_H_
 #define PLATFORM_CORE_RESET_INFO_H_
 
+#include <platform/core/string_view.h>
+
 #include <cstdint>
 
 namespace platform {
@@ -19,7 +21,7 @@ class ResetInfo final {
     [[nodiscard]] constexpr Reason reason() const {
         return reason_;
     }
-    [[nodiscard]] const char* reason_string() const;
+    [[nodiscard]] StringView reason_text() const;
 
    private:
     Reason reason_{Reason::kUnknown};

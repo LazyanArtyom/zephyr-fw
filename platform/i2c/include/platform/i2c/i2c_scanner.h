@@ -4,6 +4,7 @@
 #include <platform/core/device_ref.h>
 #include <platform/core/result.h>
 #include <platform/core/status.h>
+#include <platform/core/string_view.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -44,7 +45,7 @@ struct I2cScanResult {
 class I2cBus final {
    public:
     constexpr I2cBus() = default;
-    constexpr I2cBus(std::uint8_t index, DeviceRef device, const char* name, const char* device_name)
+    constexpr I2cBus(std::uint8_t index, DeviceRef device, StringView name, StringView device_name)
         : index_(index), device_(device), name_(name), device_name_(device_name) {}
 
     [[nodiscard]] static Result<I2cBus> Resolve(const char* bus_spec);
@@ -52,10 +53,10 @@ class I2cBus final {
     [[nodiscard]] constexpr std::uint8_t index() const {
         return index_;
     }
-    [[nodiscard]] constexpr const char* name() const {
+    [[nodiscard]] constexpr StringView name() const {
         return name_;
     }
-    [[nodiscard]] constexpr const char* device_name() const {
+    [[nodiscard]] constexpr StringView device_name() const {
         return device_name_;
     }
     [[nodiscard]] constexpr DeviceRef device() const {
@@ -69,8 +70,8 @@ class I2cBus final {
    private:
     std::uint8_t index_{0};
     DeviceRef device_{};
-    const char* name_{""};
-    const char* device_name_{""};
+    StringView name_{};
+    StringView device_name_{};
 };
 
 class I2cScanner final {

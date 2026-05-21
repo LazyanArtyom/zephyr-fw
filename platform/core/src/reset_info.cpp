@@ -11,7 +11,7 @@ void ResetInfo::RequestColdReboot() {
     sys_reboot(SYS_REBOOT_COLD);
 }
 
-const char* ResetInfo::reason_string() const {
+StringView ResetInfo::reason_text() const {
     switch (reason_) {
         case Reason::kUnknown:
             return "unknown";

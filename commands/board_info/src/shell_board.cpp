@@ -12,43 +12,43 @@ const char* EnabledDisabled(bool enabled) {
 void PrintBoardInfo(const shell* shell) {
     const platform::BoardInfo& board_info = platform::BoardInfo::Current();
 
-    shell_print(shell, "Firmware: %s", board_info.display_name());
-    shell_print(shell, "Name: %s", board_info.firmware_name());
-    shell_print(shell, "Version: %s%s", board_info.firmware_version(),
+    shell_print(shell, "Firmware: %s", board_info.display_name().c_str());
+    shell_print(shell, "Name: %s", board_info.firmware_name().c_str());
+    shell_print(shell, "Version: %s%s", board_info.firmware_version().c_str(),
                 board_info.is_git_dirty() ? "-dirty" : "");
-    shell_print(shell, "Git commit: %s%s", board_info.git_commit(),
+    shell_print(shell, "Git commit: %s%s", board_info.git_commit().c_str(),
                 board_info.is_git_dirty() ? " (dirty)" : "");
-    shell_print(shell, "Build time: %s", board_info.build_timestamp());
-    shell_print(shell, "Build profile: %s", board_info.build_profile());
-    shell_print(shell, "Boot mode: %s", board_info.boot_mode());
-    shell_print(shell, "Display mode: %s", board_info.display_mode());
+    shell_print(shell, "Build time: %s", board_info.build_timestamp().c_str());
+    shell_print(shell, "Build profile: %s", board_info.build_profile().c_str());
+    shell_print(shell, "Boot mode: %s", board_info.boot_mode().c_str());
+    shell_print(shell, "Display mode: %s", board_info.display_mode().c_str());
     shell_print(shell, "");
     shell_print(shell, "Board:");
-    shell_print(shell, "Board profile: %s", board_info.board_profile());
-    shell_print(shell, "Board name: %s", board_info.board_name());
-    shell_print(shell, "Board status: %s", board_info.board_status());
-    shell_print(shell, "Serial baud: %s", board_info.board_serial_baud());
-    shell_print(shell, "Zephyr board: %s", board_info.zephyr_board_target());
-    shell_print(shell, "Description: %s", board_info.board_description());
+    shell_print(shell, "Board profile: %s", board_info.board_profile().c_str());
+    shell_print(shell, "Board name: %s", board_info.board_name().c_str());
+    shell_print(shell, "Board status: %s", board_info.board_status().c_str());
+    shell_print(shell, "Serial baud: %s", board_info.board_serial_baud().c_str());
+    shell_print(shell, "Zephyr board: %s", board_info.zephyr_board_target().c_str());
+    shell_print(shell, "Description: %s", board_info.board_description().c_str());
     shell_print(shell, "");
     shell_print(shell, "Platform:");
-    shell_print(shell, "Zephyr version: %s", board_info.zephyr_version());
-    shell_print(shell, "Toolchain: %s", board_info.toolchain_variant());
-    shell_print(shell, "SDK path: %s", board_info.zephyr_sdk_install_dir());
-    shell_print(shell, "Compiler: %s %s", board_info.compiler_id(), board_info.compiler_version());
-    shell_print(shell, "Architecture: %s", board_info.architecture());
-    shell_print(shell, "SoC: %s", board_info.soc_name());
-    shell_print(shell, "SoC family: %s", board_info.soc_family());
-    shell_print(shell, "SoC series: %s", board_info.soc_series());
-    shell_print(shell, "SoC part: %s", board_info.soc_part_number());
+    shell_print(shell, "Zephyr version: %s", board_info.zephyr_version().c_str());
+    shell_print(shell, "Toolchain: %s", board_info.toolchain_variant().c_str());
+    shell_print(shell, "SDK path: %s", board_info.zephyr_sdk_install_dir().c_str());
+    shell_print(shell, "Compiler: %s %s", board_info.compiler_id().c_str(), board_info.compiler_version().c_str());
+    shell_print(shell, "Architecture: %s", board_info.architecture().c_str());
+    shell_print(shell, "SoC: %s", board_info.soc_name().c_str());
+    shell_print(shell, "SoC family: %s", board_info.soc_family().c_str());
+    shell_print(shell, "SoC series: %s", board_info.soc_series().c_str());
+    shell_print(shell, "SoC part: %s", board_info.soc_part_number().c_str());
     shell_print(shell, "");
     shell_print(shell, "Flash:");
-    shell_print(shell, "  runner: %s", board_info.flash_runner());
-    shell_print(shell, "  chip: %s", board_info.flash_chip());
-    shell_print(shell, "  offset: %s", board_info.flash_offset());
+    shell_print(shell, "  runner: %s", board_info.flash_runner().c_str());
+    shell_print(shell, "  chip: %s", board_info.flash_chip().c_str());
+    shell_print(shell, "  offset: %s", board_info.flash_offset().c_str());
     shell_print(shell, "");
     shell_print(shell, "Runtime:");
-    shell_print(shell, "Reset reason: %s", platform::ResetInfo::Current().reason_string());
+    shell_print(shell, "Reset reason: %s", platform::ResetInfo::Current().reason_text().c_str());
     shell_print(shell, "Uptime: %lld ms",
                 static_cast<long long>(platform::Clock::UptimeMilliseconds()));
     shell_print(shell, "");
@@ -59,9 +59,9 @@ void PrintBoardInfo(const shell* shell) {
     shell_print(shell, "  settings: %s", EnabledDisabled(board_info.settings_enabled()));
     shell_print(shell, "  flash: %s", EnabledDisabled(board_info.flash_enabled()));
     shell_print(shell, "  mcuboot: %s", EnabledDisabled(board_info.mcuboot_enabled()));
-    shell_print(shell, "Settings backend: %s", board_info.settings_backend());
-    shell_print(shell, "Settings backend status: %s", board_info.settings_backend_status());
-    shell_print(shell, "Storage partition status: %s", board_info.storage_partition_status());
+    shell_print(shell, "Settings backend: %s", board_info.settings_backend().c_str());
+    shell_print(shell, "Settings backend status: %s", board_info.settings_backend_status().c_str());
+    shell_print(shell, "Storage partition status: %s", board_info.storage_partition_status().c_str());
 }
 
 int CmdBoardInfo(const shell* shell, size_t argc, char** argv) {

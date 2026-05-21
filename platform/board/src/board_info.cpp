@@ -22,79 +22,79 @@ const BoardInfo& BoardInfo::Current() {
     return kCurrentBoardInfo;
 }
 
-const char* BoardInfo::display_name() const {
+StringView BoardInfo::display_name() const {
     return FW_META_DISPLAY_NAME;
 }
 
-const char* BoardInfo::firmware_name() const {
+StringView BoardInfo::firmware_name() const {
     return FW_META_FIRMWARE_NAME;
 }
 
-const char* BoardInfo::firmware_slug() const {
+StringView BoardInfo::firmware_slug() const {
     return FW_META_SLUG;
 }
 
-const char* BoardInfo::vendor_name() const {
+StringView BoardInfo::vendor_name() const {
     return FW_META_VENDOR;
 }
 
-const char* BoardInfo::board_name() const {
+StringView BoardInfo::board_name() const {
     return FW_META_BOARD_DISPLAY_NAME;
 }
 
-const char* BoardInfo::board_profile() const {
+StringView BoardInfo::board_profile() const {
     return FW_META_BOARD_PROFILE;
 }
 
-const char* BoardInfo::board_status() const {
+StringView BoardInfo::board_status() const {
     return FW_META_BOARD_STATUS;
 }
 
-const char* BoardInfo::board_serial_baud() const {
+StringView BoardInfo::board_serial_baud() const {
     return FW_META_BOARD_SERIAL_BAUD;
 }
 
-const char* BoardInfo::board_description() const {
+StringView BoardInfo::board_description() const {
     return FW_META_BOARD_DESCRIPTION;
 }
 
-const char* BoardInfo::zephyr_board_target() const {
+StringView BoardInfo::zephyr_board_target() const {
     return CONFIG_BOARD_TARGET;
 }
 
-const char* BoardInfo::flash_runner() const {
+StringView BoardInfo::flash_runner() const {
     return FW_META_BOARD_FLASH_RUNNER;
 }
 
-const char* BoardInfo::flash_chip() const {
+StringView BoardInfo::flash_chip() const {
     return FW_META_BOARD_FLASH_CHIP;
 }
 
-const char* BoardInfo::flash_offset() const {
+StringView BoardInfo::flash_offset() const {
     return FW_META_BOARD_FLASH_OFFSET;
 }
 
-const char* BoardInfo::firmware_version() const {
+StringView BoardInfo::firmware_version() const {
     return FW_META_VERSION_STRING;
 }
 
-const char* BoardInfo::build_profile() const {
+StringView BoardInfo::build_profile() const {
     return FW_META_BUILD_PROFILE;
 }
 
-const char* BoardInfo::boot_mode() const {
+StringView BoardInfo::boot_mode() const {
     return FW_META_BOOT_MODE;
 }
 
-const char* BoardInfo::display_mode() const {
+StringView BoardInfo::display_mode() const {
     return FW_META_DISPLAY_MODE;
 }
 
-const char* BoardInfo::git_commit() const {
+StringView BoardInfo::git_commit() const {
     return FW_META_GIT_COMMIT;
 }
 
-const char* BoardInfo::build_timestamp() const {
+StringView BoardInfo::build_timestamp() const {
     return FW_META_BUILD_TIMESTAMP;
 }
 
@@ -102,27 +102,27 @@ bool BoardInfo::is_git_dirty() const {
     return FW_META_GIT_DIRTY != 0;
 }
 
-const char* BoardInfo::zephyr_version() const {
+StringView BoardInfo::zephyr_version() const {
     return KERNEL_VERSION_STRING;
 }
 
-const char* BoardInfo::toolchain_variant() const {
+StringView BoardInfo::toolchain_variant() const {
     return FW_META_TOOLCHAIN_VARIANT;
 }
 
-const char* BoardInfo::zephyr_sdk_install_dir() const {
+StringView BoardInfo::zephyr_sdk_install_dir() const {
     return FW_META_ZEPHYR_SDK_INSTALL_DIR;
 }
 
-const char* BoardInfo::compiler_id() const {
+StringView BoardInfo::compiler_id() const {
     return FW_META_CXX_COMPILER_ID;
 }
 
-const char* BoardInfo::compiler_version() const {
+StringView BoardInfo::compiler_version() const {
     return FW_META_CXX_COMPILER_VERSION;
 }
 
-const char* BoardInfo::architecture() const {
+StringView BoardInfo::architecture() const {
 #if defined(CONFIG_ARCH)
     return CONFIG_ARCH;
 #else
@@ -130,7 +130,7 @@ const char* BoardInfo::architecture() const {
 #endif
 }
 
-const char* BoardInfo::soc_name() const {
+StringView BoardInfo::soc_name() const {
 #if defined(CONFIG_SOC)
     return CONFIG_SOC;
 #else
@@ -138,7 +138,7 @@ const char* BoardInfo::soc_name() const {
 #endif
 }
 
-const char* BoardInfo::soc_series() const {
+StringView BoardInfo::soc_series() const {
 #if defined(CONFIG_SOC_SERIES)
     return CONFIG_SOC_SERIES;
 #else
@@ -146,7 +146,7 @@ const char* BoardInfo::soc_series() const {
 #endif
 }
 
-const char* BoardInfo::soc_family() const {
+StringView BoardInfo::soc_family() const {
 #if defined(CONFIG_SOC_FAMILY)
     return CONFIG_SOC_FAMILY;
 #else
@@ -154,7 +154,7 @@ const char* BoardInfo::soc_family() const {
 #endif
 }
 
-const char* BoardInfo::soc_part_number() const {
+StringView BoardInfo::soc_part_number() const {
 #if defined(CONFIG_SOC_PART_NUMBER)
     return CONFIG_SOC_PART_NUMBER;
 #else
@@ -210,7 +210,7 @@ bool BoardInfo::mcuboot_enabled() const {
 #endif
 }
 
-const char* BoardInfo::settings_backend() const {
+StringView BoardInfo::settings_backend() const {
 #if defined(CONFIG_SETTINGS_NVS)
     return "nvs";
 #elif defined(CONFIG_SETTINGS_ZMS)
@@ -228,11 +228,11 @@ const char* BoardInfo::settings_backend() const {
 #endif
 }
 
-const char* BoardInfo::settings_backend_status() const {
+StringView BoardInfo::settings_backend_status() const {
     return settings_enabled() ? "enabled" : "disabled";
 }
 
-const char* BoardInfo::storage_partition_status() const {
+StringView BoardInfo::storage_partition_status() const {
 #if !defined(CONFIG_SETTINGS)
     return "not required (settings disabled)";
 #elif defined(CONFIG_FLASH_MAP)
@@ -245,11 +245,11 @@ const char* BoardInfo::storage_partition_status() const {
 }
 
 void BoardInfo::LogBootSummary() const {
-    LOG_INF("%s booted", display_name());
-    LOG_INF("Board profile: %s", board_profile());
-    LOG_INF("Zephyr board: %s", zephyr_board_target());
-    LOG_INF("Version: %s%s", firmware_version(), is_git_dirty() ? "-dirty" : "");
-    LOG_INF("Build profile: %s, boot: %s", build_profile(), boot_mode());
+    LOG_INF("%s booted", display_name().c_str());
+    LOG_INF("Board profile: %s", board_profile().c_str());
+    LOG_INF("Zephyr board: %s", zephyr_board_target().c_str());
+    LOG_INF("Version: %s%s", firmware_version().c_str(), is_git_dirty() ? "-dirty" : "");
+    LOG_INF("Build profile: %s, boot: %s", build_profile().c_str(), boot_mode().c_str());
     LOG_INF("Features: shell=%s display=%s i2c=%s settings=%s", EnabledDisabled(shell_enabled()),
             EnabledDisabled(display_enabled()), EnabledDisabled(i2c_enabled()),
             EnabledDisabled(settings_enabled()));

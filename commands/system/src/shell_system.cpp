@@ -30,7 +30,7 @@ int CmdResetReason(const shell* shell, size_t argc, char** argv) {
 
     const platform::ResetInfo reset_info = platform::ResetInfo::Current();
 
-    shell_print(shell, "Reset reason: %s", reset_info.reason_string());
+    shell_print(shell, "Reset reason: %s", reset_info.reason_text().c_str());
     return 0;
 }
 

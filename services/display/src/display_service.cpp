@@ -52,10 +52,10 @@ bool ShowBootSummary() {
 
     cfb_framebuffer_clear(display_handle, false);
 
-    cfb_print(display_handle, board_info.display_name(), 0, 0);
-    cfb_print(display_handle, board_info.board_profile(), 0, 16);
-    cfb_print(display_handle, board_info.firmware_version(), 0, 32);
-    cfb_print(display_handle, board_info.build_profile(), 0, 48);
+    cfb_print(display_handle, board_info.display_name().c_str(), 0, 0);
+    cfb_print(display_handle, board_info.board_profile().c_str(), 0, 16);
+    cfb_print(display_handle, board_info.firmware_version().c_str(), 0, 32);
+    cfb_print(display_handle, board_info.build_profile().c_str(), 0, 48);
 
     cfb_framebuffer_finalize(display_handle);
     return true;

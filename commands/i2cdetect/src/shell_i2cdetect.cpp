@@ -132,7 +132,7 @@ int CmdI2cDetect(const shell* shell, size_t argc, char** argv) {
     platform::Result<platform::I2cBus> bus_result = platform::I2cBus::Resolve(bus_spec);
     if (!bus_result.ok()) {
         shell_error(shell, "cannot open i2c bus '%s': %s", bus_spec,
-                    bus_result.status().message());
+                    bus_result.status().message().c_str());
         return -ENODEV;
     }
 
@@ -140,11 +140,12 @@ int CmdI2cDetect(const shell* shell, size_t argc, char** argv) {
     const platform::Status scan_status =
         platform::I2cScanner::Scan(bus_result.value(), options, &scan_result);
     if (!scan_status.ok()) {
-        shell_error(shell, "i2c scan failed: %s", scan_status.message());
+        shell_error(shell, "i2c scan failed: %s", scan_status.message().c_str());
         return -EIO;
     }
 
-    shell_print(shell, "I2C bus: %s (%s)", bus_result.value().name(), bus_result.value().device_name());
+    shell_print(shell, "I2C bus: %s (%s)", bus_result.value().name().c_str(),
+                bus_result.value().device_name().c_str());
     shell_print(shell, "Probe: %s",
                 options.probe_method == platform::I2cProbeMethod::kReadByte ? "read byte"
                                                                              : "quick write");
