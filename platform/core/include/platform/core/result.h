@@ -4,76 +4,17 @@
 #include <platform/core/status.h>
 
 #include <cstdint>
-#include <new>
-#include <type_traits>
-#include <utility>
 
 namespace platform {
 
 template <typename T>
 class Result {
    public:
-    Result(const T& value) : status_(Status::Ok()), has_value_(true) {
-        new (&storage_.value) T(value);
-    }
-
-    Result(T&& value) : status_(Status::Ok()), has_value_(true) {
-        new (&storage_.value) T(std::move(value));
-    }
-
+    Result(const T& value) : value_(value), status_(Status::Ok()), has_value_(true) {}
     explicit Result(Status status) : status_(status), has_value_(false) {}
-
-    Result(const Result& other) : status_(other.status_), has_value_(other.has_value_) {
-        if (has_value_) {
-            new (&storage_.value) T(other.storage_.value);
-        }
-    }
-
-    Result(Result&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
-        : status_(other.status_), has_value_(other.has_value_) {
-        if (has_value_) {
-            new (&storage_.value) T(std::move(other.storage_.value));
-        }
-    }
-
-    Result& operator=(const Result& other) {
-        if (this == &other) {
-            return *this;
-        }
-
-        DestroyValue();
-        status_ = other.status_;
-        has_value_ = other.has_value_;
-        if (has_value_) {
-            new (&storage_.value) T(other.storage_.value);
-        }
-        return *this;
-    }
-
-    Result& operator=(Result&& other) noexcept(std::is_nothrow_move_assignable_v<T> &&
-                                               std::is_nothrow_move_constructible_v<T>) {
-        if (this == &other) {
-            return *this;
-        }
-
-        DestroyValue();
-        status_ = other.status_;
-        has_value_ = other.has_value_;
-        if (has_value_) {
-            new (&storage_.value) T(std::move(other.storage_.value));
-        }
-        return *this;
-    }
-
-    ~Result() {
-        DestroyValue();
-    }
 
     [[nodiscard]] static Result<T> FromValue(const T& value) {
         return Result<T>(value);
-    }
-    [[nodiscard]] static Result<T> FromValue(T&& value) {
-        return Result<T>(std::move(value));
     }
     [[nodiscard]] static Result<T> FromStatus(Status status) {
         return Result<T>(status);
@@ -90,35 +31,20 @@ class Result {
     }
 
     [[nodiscard]] const T& value() const {
-        return storage_.value;
+        return value_;
     }
     [[nodiscard]] T& value() {
-        return storage_.value;
+        return value_;
     }
     [[nodiscard]] const T* value_if_ok() const {
-        return ok() ? &storage_.value : nullptr;
+        return ok() ? &value_ : nullptr;
     }
     [[nodiscard]] T* value_if_ok() {
-        return ok() ? &storage_.value : nullptr;
+        return ok() ? &value_ : nullptr;
     }
 
    private:
-    union Storage {
-        constexpr Storage() : empty(0) {}
-        ~Storage() {}
-
-        std::uint8_t empty;
-        T value;
-    };
-
-    void DestroyValue() {
-        if (has_value_) {
-            storage_.value.~T();
-            has_value_ = false;
-        }
-    }
-
-    Storage storage_{};
+    T value_{};
     Status status_{Status::InternalError("result has no value")};
     bool has_value_{false};
 };

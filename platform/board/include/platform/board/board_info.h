@@ -15,7 +15,13 @@ class BoardInfo final {
     [[nodiscard]] const char* vendor_name() const;
     [[nodiscard]] const char* board_name() const;
     [[nodiscard]] const char* board_profile() const;
+    [[nodiscard]] const char* board_status() const;
+    [[nodiscard]] const char* board_serial_baud() const;
+    [[nodiscard]] const char* board_description() const;
     [[nodiscard]] const char* zephyr_board_target() const;
+    [[nodiscard]] const char* flash_runner() const;
+    [[nodiscard]] const char* flash_chip() const;
+    [[nodiscard]] const char* flash_offset() const;
     [[nodiscard]] const char* firmware_version() const;
     [[nodiscard]] const char* build_profile() const;
     [[nodiscard]] const char* boot_mode() const;

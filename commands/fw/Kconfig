@@ -1,0 +1,10 @@
+config FW_CMD_FW
+    bool "Enable custom firmware metadata commands"
+    depends on FW_SHELL
+    help
+      Enables project-owned shell commands under: commands/fw
+
+      Runtime commands:
+        fw info
+        fw version
+        fw build

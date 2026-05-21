@@ -2,8 +2,8 @@
 #include <platform/core/reset_info.h>
 #include <zephyr/shell/shell.h>
 
-#include <cerrno>
-#include <cstring>
+#include <errno.h>
+#include <string.h>
 
 namespace {
 
@@ -49,15 +49,15 @@ int CmdSystem(const shell* shell, size_t argc, char** argv) {
         return PrintSystemHelp(shell);
     }
 
-    if (std::strcmp(argv[1], "uptime") == 0) {
+    if (strcmp(argv[1], "uptime") == 0) {
         return CmdUptime(shell, argc - 1, &argv[1]);
     }
 
-    if (std::strcmp(argv[1], "reset-reason") == 0) {
+    if (strcmp(argv[1], "reset-reason") == 0) {
         return CmdResetReason(shell, argc - 1, &argv[1]);
     }
 
-    if (std::strcmp(argv[1], "reboot") == 0) {
+    if (strcmp(argv[1], "reboot") == 0) {
         return CmdReboot(shell, argc - 1, &argv[1]);
     }
 

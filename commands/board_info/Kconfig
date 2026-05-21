@@ -1,0 +1,10 @@
+config FW_CMD_BOARD_INFO
+    bool "Enable custom board information commands"
+    depends on FW_SHELL
+    help
+      Enables project-owned shell commands under: commands/board_info
+
+      Runtime commands:
+        board_info
+        board info
+        board caps

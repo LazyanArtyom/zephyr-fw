@@ -1,0 +1,10 @@
+config FW_CMD_SYSTEM
+    bool "Enable custom system commands"
+    depends on FW_SHELL
+    help
+      Enables project-owned shell commands under: commands/system
+
+      Runtime commands:
+        system uptime
+        system reset-reason
+        system reboot

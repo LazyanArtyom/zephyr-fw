@@ -1,0 +1,12 @@
+config FW_CMD_SETTINGS
+    bool "Enable custom settings commands"
+    depends on FW_SHELL
+    depends on SETTINGS
+    help
+      Enables project-owned shell commands under: commands/settings
+
+      Runtime commands:
+        settings list
+        settings get <key>
+        settings set <key> <value>
+        settings reset <key>

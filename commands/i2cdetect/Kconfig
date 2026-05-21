@@ -1,0 +1,10 @@
+config FW_CMD_I2CDETECT
+    bool "Enable custom Linux-like i2cdetect command"
+    depends on FW_SHELL
+    depends on I2C
+    select SHELL_GETOPT
+    help
+      Enables project-owned shell commands under: commands/i2cdetect
+
+      Runtime command:
+        i2cdetect [-a] [-r] [-y] <bus>

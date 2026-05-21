@@ -39,15 +39,39 @@ const char* BoardInfo::vendor_name() const {
 }
 
 const char* BoardInfo::board_name() const {
-    return board_profile();
+    return FW_META_BOARD_DISPLAY_NAME;
 }
 
 const char* BoardInfo::board_profile() const {
     return FW_META_BOARD_PROFILE;
 }
 
+const char* BoardInfo::board_status() const {
+    return FW_META_BOARD_STATUS;
+}
+
+const char* BoardInfo::board_serial_baud() const {
+    return FW_META_BOARD_SERIAL_BAUD;
+}
+
+const char* BoardInfo::board_description() const {
+    return FW_META_BOARD_DESCRIPTION;
+}
+
 const char* BoardInfo::zephyr_board_target() const {
     return CONFIG_BOARD_TARGET;
+}
+
+const char* BoardInfo::flash_runner() const {
+    return FW_META_BOARD_FLASH_RUNNER;
+}
+
+const char* BoardInfo::flash_chip() const {
+    return FW_META_BOARD_FLASH_CHIP;
+}
+
+const char* BoardInfo::flash_offset() const {
+    return FW_META_BOARD_FLASH_OFFSET;
 }
 
 const char* BoardInfo::firmware_version() const {

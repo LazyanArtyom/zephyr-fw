@@ -65,80 +65,93 @@ escape_kconfig_string() {
     printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
+read_cmake_cache_value() {
+    local cache_file="$1"
+    local key="$2"
+
+    awk -F= -v wanted_key="${key}" '
+        $1 ~ "^" wanted_key ":" {
+            print substr($0, index($0, "=") + 1)
+            exit
+        }
+    ' "${cache_file}"
+}
+
+remove_build_dir() {
+    local build_dir="$1"
+    local reason="$2"
+
+    case "${build_dir}" in
+        "${PROJECT_ROOT}/build/"*)
+            ;;
+        *)
+            die "refusing to remove build directory outside project build tree: ${build_dir}"
+            ;;
+    esac
+
+    if [[ -d "${build_dir}" ]]; then
+        rm -rf -- "${build_dir}"
+        BUILD_DIR_RESET_REASON="${reason}"
+    fi
+}
+
 west_supports_build() {
     "${WEST_EXE}" "$@" build -h >/dev/null 2>&1
 }
 
+west_supports_build_in_dir() {
+    local workdir="$1"
+    shift
+
+    (cd "${workdir}" && "${WEST_EXE}" "$@" build -h >/dev/null 2>&1)
+}
+
 resolve_west_executable() {
-    local candidate
-    local candidates=()
-
     if [[ -n "${WEST_BIN:-}" ]]; then
-        candidates+=("${WEST_BIN}")
-    fi
-
-    if [[ -n "${ZEPHYR_BASE:-}" ]]; then
-        candidates+=("${ZEPHYR_BASE}/../.venv/bin/west")
-    fi
-
-    candidates+=(
-        "${PROJECT_ROOT}/../zephyrproject/.venv/bin/west"
-        "${PROJECT_ROOT}/../../zephyrproject/.venv/bin/west"
-        "${HOME}/Documents/projects/zephyrproject/.venv/bin/west"
-        "${HOME}/Documents/zephyrproject/.venv/bin/west"
-        "${HOME}/zephyrproject/.venv/bin/west"
-    )
-
-    for candidate in "${candidates[@]}"; do
-        if [[ -x "${candidate}" ]]; then
-            WEST_EXE="${candidate}"
+        if [[ -x "${WEST_BIN}" ]]; then
+            WEST_EXE="${WEST_BIN}"
             return
         fi
-    done
+        die "WEST_BIN is not executable: ${WEST_BIN}"
+    fi
 
     if command -v west >/dev/null 2>&1; then
         WEST_EXE="$(command -v west)"
         return
     fi
 
-    die "west not found. Source the Zephyr environment or set WEST_BIN=/path/to/west."
+    die "west not found. Install west in PATH or set WEST_BIN=/path/to/west."
 }
 
 resolve_west_command() {
     resolve_west_executable
 
-    if west_supports_build; then
-        WEST_CMD=("${WEST_EXE}")
-        return
-    fi
-
-    if [[ -n "${ZEPHYR_BASE:-}" ]]; then
+    if [[ -n "${ZEPHYR_BASE:-}" && -d "${ZEPHYR_BASE}" ]]; then
         if west_supports_build -z "${ZEPHYR_BASE}"; then
             WEST_CMD=("${WEST_EXE}" -z "${ZEPHYR_BASE}")
             return
         fi
-    fi
 
-    local candidate
-    local candidates=(
-        "${PROJECT_ROOT}/../zephyrproject/zephyr"
-        "${PROJECT_ROOT}/../zephyr"
-        "${PROJECT_ROOT}/../../zephyrproject/zephyr"
-        "${HOME}/Documents/projects/zephyrproject/zephyr"
-        "${HOME}/Documents/zephyrproject/zephyr"
-        "${HOME}/zephyrproject/zephyr"
-    )
-
-    for candidate in "${candidates[@]}"; do
-        [[ -d "${candidate}" ]] || continue
-        if west_supports_build -z "${candidate}"; then
-            WEST_CMD=("${WEST_EXE}" -z "${candidate}")
-            export ZEPHYR_BASE="${candidate}"
+        local workspace_dir
+        workspace_dir="$(dirname "${ZEPHYR_BASE}")"
+        if [[ -d "${workspace_dir}/.west" ]] && west_supports_build_in_dir "${workspace_dir}"; then
+            WEST_CMD=("${WEST_EXE}")
+            WEST_WORKDIR="${workspace_dir}"
             return
         fi
-    done
+    fi
 
-    die "west build is not available. Activate the Zephyr venv, set WEST_BIN, or set ZEPHYR_BASE to your Zephyr checkout."
+    local workspace_dir
+    if workspace_dir="$("${WEST_EXE}" topdir 2>/dev/null)"; then
+        if [[ -d "${workspace_dir}/zephyr" ]] && west_supports_build_in_dir "${workspace_dir}"; then
+            WEST_CMD=("${WEST_EXE}")
+            WEST_WORKDIR="${workspace_dir}"
+            export ZEPHYR_BASE="${workspace_dir}/zephyr"
+            return
+        fi
+    fi
+
+    die "west build is not available. Set ZEPHYR_BASE to the Zephyr checkout used by this toolchain."
 }
 
 BOARD_PROFILE=""
@@ -147,6 +160,7 @@ BUILD_MODE="auto"
 BOOT_MODE=""
 WEST_EXE=""
 WEST_CMD=()
+WEST_WORKDIR=""
 
 if [[ $# -gt 0 && "${1}" != --* && "${1}" != -* ]]; then
     BOARD_PROFILE="$1"
@@ -184,7 +198,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --list-boards)
-            "${PROJECT_ROOT}/scripts/list_boards.sh"
+            "${PROJECT_ROOT}/tools/fw.py" boards list
             exit 0
             ;;
         --help|-h)
@@ -200,7 +214,7 @@ done
 if [[ -z "${BOARD_PROFILE}" ]]; then
     usage
     echo
-    "${PROJECT_ROOT}/scripts/list_boards.sh"
+    "${PROJECT_ROOT}/tools/fw.py" boards list
     exit 1
 fi
 
@@ -216,6 +230,12 @@ fi
 ZEPHYR_BOARD="$(read_yaml_value "${BOARD_YML}" zephyr_board)"
 [[ -n "${ZEPHYR_BOARD}" ]] || die "zephyr_board is missing in ${BOARD_YML}"
 
+BOARD_DISPLAY_NAME="$(read_yaml_value "${BOARD_YML}" display_name)"
+BOARD_SERIAL_BAUD="$(read_yaml_value "${BOARD_YML}" serial_baud)"
+BOARD_FLASH_RUNNER="$(read_yaml_value "${BOARD_YML}" flash_runner)"
+BOARD_FLASH_CHIP="$(read_yaml_value "${BOARD_YML}" flash_chip)"
+BOARD_FLASH_OFFSET="$(read_yaml_value "${BOARD_YML}" flash_offset)"
+BOARD_DESCRIPTION="$(read_yaml_value "${BOARD_YML}" description)"
 DEFAULT_DISPLAY="$(read_yaml_value "${BOARD_YML}" default_display)"
 DEFAULT_BOOT="$(read_yaml_value "${BOARD_YML}" default_boot)"
 BOOT_MODE="${BOOT_MODE:-${DEFAULT_BOOT:-no-mcuboot}}"
@@ -318,12 +338,42 @@ fi
 
 resolve_west_command
 
+if [[ -z "${ZEPHYR_BASE:-}" || ! -f "${ZEPHYR_BASE}/cmake/modules/zephyr_default.cmake" ]]; then
+    die "invalid ZEPHYR_BASE: ${ZEPHYR_BASE:-unset} (missing cmake/modules/zephyr_default.cmake)"
+fi
+
+AUTO_PRISTINE_REASON=""
+BUILD_DIR_RESET_REASON=""
+if [[ -f "${BUILD_DIR}/CMakeCache.txt" ]]; then
+    CACHED_ZEPHYR_BASE="$(read_cmake_cache_value "${BUILD_DIR}/CMakeCache.txt" "ZEPHYR_BASE")"
+    if [[ -n "${CACHED_ZEPHYR_BASE}" && "${CACHED_ZEPHYR_BASE}" != "${ZEPHYR_BASE}" ]]; then
+        case "${BUILD_MODE}" in
+            auto|clean|pristine)
+                remove_build_dir "${BUILD_DIR}" \
+                    "cached Zephyr base changed: ${CACHED_ZEPHYR_BASE} -> ${ZEPHYR_BASE}"
+                PRISTINE_ARGS=(-p auto)
+                if [[ "${BUILD_MODE}" == "auto" ]]; then
+                    AUTO_PRISTINE_REASON="${BUILD_DIR_RESET_REASON}"
+                fi
+                ;;
+            incremental|no)
+                die "build cache uses ${CACHED_ZEPHYR_BASE}, but active ZEPHYR_BASE is ${ZEPHYR_BASE}. Re-run with --mode auto or --mode pristine."
+                ;;
+        esac
+    fi
+fi
+
 echo "Project root   : ${PROJECT_ROOT}"
 echo "Firmware       : ${APP_FIRMWARE_NAME}"
 echo "Board profile  : ${BOARD_PROFILE}"
 echo "Zephyr board   : ${ZEPHYR_BOARD}"
 echo "Build profile  : ${BUILD_PROFILE}"
 echo "Build mode     : ${BUILD_MODE}"
+if [[ -n "${AUTO_PRISTINE_REASON}" ]]; then
+    echo "Auto pristine  : ${AUTO_PRISTINE_REASON}"
+elif [[ -n "${BUILD_DIR_RESET_REASON}" ]]; then
+    echo "Build reset    : ${BUILD_DIR_RESET_REASON}"
+fi
 echo "Boot mode      : ${BOOT_MODE}"
 echo "Display        : ${DISPLAY_MODE} (from board.yml)"
 echo "Shell          : ${SHELL_MODE} (profile policy)"
@@ -332,20 +382,39 @@ echo "Build dir      : ${BUILD_DIR}"
 echo "Conf files     : ${CONF_FILE_ARG}"
 echo "Overlay        : ${BOARD_OVERLAY}"
 echo "West command   : ${WEST_CMD[*]}"
+if [[ -n "${WEST_WORKDIR}" ]]; then
+    echo "West workdir   : ${WEST_WORKDIR}"
+fi
 echo
 
-"${WEST_CMD[@]}" "${WEST_ARGS[@]}" "${PRISTINE_ARGS[@]}" \
-    -b "${ZEPHYR_BOARD}" \
-    -d "${BUILD_DIR}" \
-    "${PROJECT_ROOT}" \
-    -- \
-    -DCONF_FILE="${CONF_FILE_ARG}" \
-    -DDTC_OVERLAY_FILE="${BOARD_OVERLAY}" \
-    -DAPP_BUILD_PROFILE="${BUILD_PROFILE}" \
-    -DAPP_BOARD_PROFILE="${BOARD_PROFILE}" \
-    -DAPP_BOOT_MODE="${BOOT_MODE}" \
-    -DAPP_DISPLAY_MODE="${DISPLAY_MODE}" \
+BUILD_COMMAND=(
+    "${WEST_CMD[@]}" "${WEST_ARGS[@]}" "${PRISTINE_ARGS[@]}"
+    -b "${ZEPHYR_BOARD}"
+    -d "${BUILD_DIR}"
+    "${PROJECT_ROOT}"
+    --
+    -DCONF_FILE="${CONF_FILE_ARG}"
+    -DDTC_OVERLAY_FILE="${BOARD_OVERLAY}"
+    -DAPP_BUILD_PROFILE="${BUILD_PROFILE}"
+    -DAPP_BOARD_PROFILE="${BOARD_PROFILE}"
+    -DAPP_BOARD_DISPLAY_NAME="${BOARD_DISPLAY_NAME:-${BOARD_PROFILE}}"
+    -DAPP_BOARD_STATUS="${BOARD_STATUS:-unknown}"
+    -DAPP_BOARD_SERIAL_BAUD="${BOARD_SERIAL_BAUD:-unknown}"
+    -DAPP_BOARD_FLASH_RUNNER="${BOARD_FLASH_RUNNER:-unknown}"
+    -DAPP_BOARD_FLASH_CHIP="${BOARD_FLASH_CHIP:-unknown}"
+    -DAPP_BOARD_FLASH_OFFSET="${BOARD_FLASH_OFFSET:-unknown}"
+    -DAPP_BOARD_DESCRIPTION="${BOARD_DESCRIPTION:-}"
+    -DAPP_BOOT_MODE="${BOOT_MODE}"
+    -DAPP_DISPLAY_MODE="${DISPLAY_MODE}"
+    -DZEPHYR_BASE="${ZEPHYR_BASE}"
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+)
+
+if [[ -n "${WEST_WORKDIR}" ]]; then
+    (cd "${WEST_WORKDIR}" && "${BUILD_COMMAND[@]}")
+else
+    "${BUILD_COMMAND[@]}"
+fi
 
 echo
 echo "Build complete:"

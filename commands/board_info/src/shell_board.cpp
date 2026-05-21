@@ -21,9 +21,17 @@ void PrintBoardInfo(const shell* shell) {
     shell_print(shell, "Build time: %s", board_info.build_timestamp());
     shell_print(shell, "Build profile: %s", board_info.build_profile());
     shell_print(shell, "Boot mode: %s", board_info.boot_mode());
+    shell_print(shell, "Display mode: %s", board_info.display_mode());
+    shell_print(shell, "");
+    shell_print(shell, "Board:");
     shell_print(shell, "Board profile: %s", board_info.board_profile());
     shell_print(shell, "Board name: %s", board_info.board_name());
+    shell_print(shell, "Board status: %s", board_info.board_status());
+    shell_print(shell, "Serial baud: %s", board_info.board_serial_baud());
     shell_print(shell, "Zephyr board: %s", board_info.zephyr_board_target());
+    shell_print(shell, "Description: %s", board_info.board_description());
+    shell_print(shell, "");
+    shell_print(shell, "Platform:");
     shell_print(shell, "Zephyr version: %s", board_info.zephyr_version());
     shell_print(shell, "Toolchain: %s", board_info.toolchain_variant());
     shell_print(shell, "SDK path: %s", board_info.zephyr_sdk_install_dir());
@@ -33,9 +41,17 @@ void PrintBoardInfo(const shell* shell) {
     shell_print(shell, "SoC family: %s", board_info.soc_family());
     shell_print(shell, "SoC series: %s", board_info.soc_series());
     shell_print(shell, "SoC part: %s", board_info.soc_part_number());
+    shell_print(shell, "");
+    shell_print(shell, "Flash:");
+    shell_print(shell, "  runner: %s", board_info.flash_runner());
+    shell_print(shell, "  chip: %s", board_info.flash_chip());
+    shell_print(shell, "  offset: %s", board_info.flash_offset());
+    shell_print(shell, "");
+    shell_print(shell, "Runtime:");
     shell_print(shell, "Reset reason: %s", platform::ResetInfo::Current().reason_string());
     shell_print(shell, "Uptime: %lld ms",
                 static_cast<long long>(platform::Clock::UptimeMilliseconds()));
+    shell_print(shell, "");
     shell_print(shell, "Enabled features:");
     shell_print(shell, "  shell: %s", EnabledDisabled(board_info.shell_enabled()));
     shell_print(shell, "  display: %s", EnabledDisabled(board_info.display_enabled()));

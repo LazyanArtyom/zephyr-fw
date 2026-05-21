@@ -38,14 +38,31 @@ def iter_board_profiles() -> list[tuple[pathlib.Path, dict[str, str]]]:
 
 
 def cmd_boards_list(_: argparse.Namespace) -> int:
+    print("Supported board profiles:")
+    print()
+
+    found = False
     for board_yml, board in iter_board_profiles():
+        found = True
         profile = board.get("profile", board_yml.parent.name)
-        print(f"{profile}")
-        print(f"  name          : {board.get('display_name', 'unknown')}")
-        print(f"  status        : {board.get('status', 'unknown')}")
-        print(f"  zephyr board  : {board.get('zephyr_board', 'not configured')}")
-        print(f"  default boot  : {board.get('default_boot', 'no-mcuboot')}")
-        print(f"  display       : {board.get('default_display', 'off')}")
+        zephyr_board = board.get("zephyr_board") or "not configured"
+        print(f"  {profile}")
+        print(f"    Name          : {board.get('display_name', 'unknown')}")
+        print(f"    Zephyr target : {zephyr_board}")
+        print(f"    Status        : {board.get('status', 'unknown')}")
+        print(f"    Display       : {board.get('default_display', 'off')}")
+        print(f"    Default boot  : {board.get('default_boot', 'no-mcuboot')}")
+        print()
+
+    if not found:
+        print("  No boards/<profile>/board.yml files found.")
+        print()
+
+    print("Examples:")
+    print()
+    print("  ./scripts/build.sh --board esp32_oled --profile debug")
+    print("  ./scripts/build.sh --board esp32_oled --profile release --mode incremental")
+    print("  ./scripts/build.sh --board esp32_oled --profile production --boot mcuboot")
     return 0
 
 
