@@ -1,0 +1,11 @@
+identifier: stm32_custom
+name: STM32 custom board template
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+supported:
+  - gpio
+  - uart
+  - watchdog
+vendor: others

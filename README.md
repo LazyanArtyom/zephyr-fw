@@ -30,7 +30,7 @@ Artifact pattern: zephyr-fw_<version>_<board>_<profile>_<boot>
 
 ## Current Board
 
-Friendly board profile:
+Board profile:
 
 ```text
 esp32_oled
@@ -39,14 +39,14 @@ esp32_oled
 Zephyr board target:
 
 ```text
-esp32_devkitc/esp32/procpu
+esp32_oled/esp32/procpu
 ```
 
 Validated hardware:
 
 ```text
 ESP32-WROOM-32 development board
-USB serial: /dev/cu.usbserial-210
+USB serial: /dev/ttyUSB0
 UART shell: 115200 baud
 OLED: SSD1306, 128x64, I2C address 0x3c, SDA GPIO21, SCL GPIO22
 ```
@@ -67,13 +67,19 @@ zephyr-fw/
 │   ├── shell/
 │   └── tools/
 ├── boards/
-│   └── <board_profile>/
-│       ├── board.yml
-│       ├── board.conf
-│       ├── board.overlay
-│       ├── debug.conf
-│       ├── release.conf
-│       └── flash.conf
+│   └── <vendor>/
+│       └── <board>/
+│           ├── board.yml
+│           ├── Kconfig.<board>
+│           ├── <board>_<qualifiers>.dts
+│           ├── <board>_<qualifiers>_defconfig
+│           ├── board.cmake
+│           ├── support/
+│           ├── metadata.yml
+│           ├── app.conf
+│           ├── debug.conf
+│           ├── release.conf
+│           └── flash.conf
 ├── configs/
 │   ├── boot/
 │   ├── features/
@@ -109,20 +115,17 @@ Production-style MCUboot build scaffold:
 List board profiles:
 
 ```bash
-./scripts/list_boards.sh
+./scripts/build.sh --list-boards
 ```
 
-## Flash From macOS
+## Flash
 
-Flashing is done from macOS because Docker Desktop does not cleanly expose the
-CH340 serial device into Linux containers.
-
-The flash script auto-detects `~/.venvs/esptool/bin/python` and falls back to
-`python3`.
+The flash script uses `python3 -m esptool` by default. Pass `--python` when you
+want to use a specific Python environment.
 
 ```bash
-./scripts/flash_esp32_mac.sh \
-  --port /dev/cu.usbserial-210 \
+./scripts/flash_esp32.sh \
+  --port /dev/ttyUSB0 \
   --board esp32_oled \
   --profile debug \
   --boot no-mcuboot
@@ -131,19 +134,19 @@ The flash script auto-detects `~/.venvs/esptool/bin/python` and falls back to
 Erase and then flash:
 
 ```bash
-./scripts/flash_esp32_mac.sh --port /dev/cu.usbserial-210 --erase
+./scripts/flash_esp32.sh --port /dev/ttyUSB0 --erase
 ```
 
 Flash and open monitor:
 
 ```bash
-./scripts/flash_esp32_mac.sh --port /dev/cu.usbserial-210 --monitor
+./scripts/flash_esp32.sh --port /dev/ttyUSB0 --monitor
 ```
 
 ## Serial Monitor
 
 ```bash
-picocom -b 115200 /dev/cu.usbserial-210
+picocom -b 115200 /dev/ttyUSB0
 ```
 
 Exit `picocom` with `Ctrl-a`, then `Ctrl-x`.
@@ -182,7 +185,7 @@ build: esp32 debug mcuboot
 build: esp32 release mcuboot
 export compile_commands: esp32 debug no-mcuboot
 package: esp32 debug no-mcuboot
-flash: esp32 mac
+flash: esp32
 monitor: esp32 uart
 check: format
 check: clang-tidy

@@ -68,6 +68,26 @@ read_yaml_value() {
     ' "${file_path}"
 }
 
+find_board_metadata() {
+    local profile="$1"
+    local metadata_path
+    local metadata_profile
+
+    while IFS= read -r metadata_path; do
+        metadata_profile="$(read_yaml_value "${metadata_path}" profile)"
+        if [[ -z "${metadata_profile}" ]]; then
+            metadata_profile="$(basename "$(dirname "${metadata_path}")")"
+        fi
+
+        if [[ "${metadata_profile}" == "${profile}" ]]; then
+            printf '%s\n' "${metadata_path}"
+            return 0
+        fi
+    done < <(find "${PROJECT_ROOT}/boards" -mindepth 3 -maxdepth 3 -type f -name metadata.yml | sort)
+
+    return 1
+}
+
 json_escape() {
     printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
@@ -124,8 +144,8 @@ if [[ -z "${BUILD_DIR}" ]]; then
     BUILD_DIR="${PROJECT_ROOT}/build/${BOARD_PROFILE}/${BUILD_PROFILE}/${BOOT_MODE}"
 fi
 
-BOARD_YML="${PROJECT_ROOT}/boards/${BOARD_PROFILE}/board.yml"
-[[ -f "${BOARD_YML}" ]] || die "board metadata not found: ${BOARD_YML}"
+BOARD_METADATA="$(find_board_metadata "${BOARD_PROFILE}")" \
+    || die "board metadata not found for '${BOARD_PROFILE}' under boards/<vendor>/<board>/metadata.yml"
 [[ -d "${BUILD_DIR}" ]] || die "build directory not found: ${BUILD_DIR}"
 
 VERSION_MAJOR="$(read_version_var VERSION_MAJOR 0)"
@@ -187,11 +207,11 @@ if command -v git >/dev/null 2>&1 && git -C "${PROJECT_ROOT}" rev-parse --git-di
     fi
 fi
 
-BOARD_DISPLAY_NAME="$(read_yaml_value "${BOARD_YML}" display_name)"
-ZEPHYR_BOARD="$(read_yaml_value "${BOARD_YML}" zephyr_board)"
-FLASH_RUNNER="$(read_yaml_value "${BOARD_YML}" flash_runner)"
-FLASH_CHIP="$(read_yaml_value "${BOARD_YML}" flash_chip)"
-FLASH_OFFSET="$(read_yaml_value "${BOARD_YML}" flash_offset)"
+BOARD_DISPLAY_NAME="$(read_yaml_value "${BOARD_METADATA}" display_name)"
+ZEPHYR_BOARD="$(read_yaml_value "${BOARD_METADATA}" zephyr_board)"
+FLASH_RUNNER="$(read_yaml_value "${BOARD_METADATA}" flash_runner)"
+FLASH_CHIP="$(read_yaml_value "${BOARD_METADATA}" flash_chip)"
+FLASH_OFFSET="$(read_yaml_value "${BOARD_METADATA}" flash_offset)"
 
 cat > "${PACKAGE_DIR}/firmware.meta.json" <<EOF
 {
@@ -232,11 +252,11 @@ Metadata:
   firmware.meta.json
   firmware.sha256
 
-For ESP32 development flashing from macOS:
-  ./flash.sh /dev/cu.usbserial-210
+For ESP32 development flashing with esptool:
+  ./flash.sh /dev/ttyUSB0
 EOF
 
-if [[ "${FLASH_RUNNER}" == "esp32_mac" ]]; then
+if [[ "${FLASH_RUNNER}" == "esp32_esptool" ]]; then
     cat > "${PACKAGE_DIR}/flash.sh" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail

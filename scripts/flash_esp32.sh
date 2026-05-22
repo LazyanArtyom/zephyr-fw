@@ -10,7 +10,7 @@ Usage:
   $0 <serial_port> [board_profile] [debug|release|production]
 
 Options:
-  --port <serial_port>     macOS serial device, for example /dev/cu.usbserial-210
+  --port <serial_port>     Serial device, for example /dev/ttyUSB0
   --board <profile>        Board profile (default: esp32_oled)
   --profile <profile>      Build profile (default: debug)
   --boot <mode>            Boot mode (default: no-mcuboot)
@@ -41,6 +41,26 @@ read_yaml_value() {
             exit
         }
     ' "${file_path}"
+}
+
+find_board_metadata() {
+    local profile="$1"
+    local metadata_path
+    local metadata_profile
+
+    while IFS= read -r metadata_path; do
+        metadata_profile="$(read_yaml_value "${metadata_path}" profile)"
+        if [[ -z "${metadata_profile}" ]]; then
+            metadata_profile="$(basename "$(dirname "${metadata_path}")")"
+        fi
+
+        if [[ "${metadata_profile}" == "${profile}" ]]; then
+            printf '%s\n' "${metadata_path}"
+            return 0
+        fi
+    done < <(find "${PROJECT_ROOT}/boards" -mindepth 3 -maxdepth 3 -type f -name metadata.yml | sort)
+
+    return 1
 }
 
 PORT=""
@@ -119,19 +139,20 @@ done
     exit 1
 }
 
-BOARD_YML="${PROJECT_ROOT}/boards/${BOARD_PROFILE}/board.yml"
-[[ -f "${BOARD_YML}" ]] || die "board metadata not found: ${BOARD_YML}"
+BOARD_METADATA="$(find_board_metadata "${BOARD_PROFILE}")" \
+    || die "board metadata not found for '${BOARD_PROFILE}' under boards/<vendor>/<board>/metadata.yml"
+BOARD_DIR="$(dirname "${BOARD_METADATA}")"
 
-FLASH_RUNNER="$(read_yaml_value "${BOARD_YML}" flash_runner)"
-BOARD_FLASH_CHIP="$(read_yaml_value "${BOARD_YML}" flash_chip)"
-BOARD_FLASH_OFFSET="$(read_yaml_value "${BOARD_YML}" flash_offset)"
-SERIAL_BAUD="$(read_yaml_value "${BOARD_YML}" serial_baud)"
+FLASH_RUNNER="$(read_yaml_value "${BOARD_METADATA}" flash_runner)"
+BOARD_FLASH_CHIP="$(read_yaml_value "${BOARD_METADATA}" flash_chip)"
+BOARD_FLASH_OFFSET="$(read_yaml_value "${BOARD_METADATA}" flash_offset)"
+SERIAL_BAUD="$(read_yaml_value "${BOARD_METADATA}" serial_baud)"
 
-[[ "${FLASH_RUNNER}" == "esp32_mac" ]] || die "board profile ${BOARD_PROFILE} does not use esp32_mac flashing"
+[[ "${FLASH_RUNNER}" == "esp32_esptool" ]] || die "board profile ${BOARD_PROFILE} does not use esp32_esptool flashing"
 
 FLASH_CHIP="${BOARD_FLASH_CHIP:-}"
 FLASH_OFFSET="${BOARD_FLASH_OFFSET:-}"
-FLASH_CONF="${PROJECT_ROOT}/boards/${BOARD_PROFILE}/flash.conf"
+FLASH_CONF="${BOARD_DIR}/flash.conf"
 if [[ -f "${FLASH_CONF}" ]]; then
     # shellcheck disable=SC1090
     source "${FLASH_CONF}"

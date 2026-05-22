@@ -7,16 +7,20 @@ Zephyr FW is structured as a small reusable firmware platform.
 Hardware description:
 
 ```text
-boards/<board_profile>/board.overlay
+boards/<vendor>/<board>/board.yml
+boards/<vendor>/<board>/<board>_<qualifiers>.dts
+boards/<vendor>/<board>/<board>_<qualifiers>_defconfig
+boards/<vendor>/<board>/board.cmake
+boards/<vendor>/<board>/support/openocd.cfg
 ```
 
 Board profile policy:
 
 ```text
-boards/<board_profile>/board.yml
-boards/<board_profile>/board.conf
-boards/<board_profile>/<profile>.conf
-boards/<board_profile>/flash.conf
+boards/<vendor>/<board>/metadata.yml
+boards/<vendor>/<board>/app.conf
+boards/<vendor>/<board>/<profile>.conf
+boards/<vendor>/<board>/flash.conf
 ```
 
 Feature selection:
@@ -61,4 +65,4 @@ common/
 ```
 
 Until then, keep common application logic board-independent and make board
-differences visible through devicetree, Kconfig, and board profile metadata.
+differences visible through board-root devicetree, Kconfig, and board metadata.

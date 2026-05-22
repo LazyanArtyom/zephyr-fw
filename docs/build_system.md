@@ -9,14 +9,15 @@ The primary build entry point is:
 ## Main Options
 
 ```text
---board      Friendly board profile from boards/<profile>/board.yml
+--board      Board profile from boards/<vendor>/<board>/metadata.yml
 --profile    debug, release, production
 --mode       auto, clean, pristine, incremental, no
 --boot       no-mcuboot, mcuboot
 ```
 
-Board features are selected by `boards/<board>/board.yml`,
-`boards/<board>/board.conf`, and profile/config fragments. Use
+Board hardware is selected by Zephyr board-root files under
+`boards/<vendor>/<board>/`. Application policy is selected by `metadata.yml`,
+`app.conf`, and profile/config fragments. Use
 `scripts/package.sh` after a successful build when you need distributable
 artifacts.
 
@@ -40,9 +41,9 @@ The build script composes config fragments in this order:
 ```text
 prj.conf
 configs/features/logging.conf
-boards/<board>/board.conf
+boards/<vendor>/<board>/app.conf
 configs/profiles/<profile>.conf
-boards/<board>/<profile>.conf
+boards/<vendor>/<board>/<profile>.conf
 configs/boot/<boot>.conf
 configs/features/display.conf or no_display.conf
 configs/features/shell.conf or no_shell.conf
@@ -51,3 +52,6 @@ configs/features/no_asserts.conf
 ```
 
 Later fragments intentionally override earlier fragments.
+
+The build also passes `-DBOARD_ROOT=<project root>`, so custom boards in this
+repository are resolved directly by Zephyr.

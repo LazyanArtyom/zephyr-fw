@@ -1,0 +1,6 @@
+board:
+  name: esp32_oled
+  full_name: ESP32 OLED development board
+  vendor: espressif
+  socs:
+    - name: esp32

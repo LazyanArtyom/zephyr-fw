@@ -5,8 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SCRIPT_PATH="${SCRIPT_DIR}/run-clang-tidy.sh"
 TIDY_DB_TO_REMOVE=""
-CONTAINER_ROOT="${CONTAINER_PROJECTS_ROOT:-/home/artyom/Documents/projects}"
 HOST_ROOT="$(cd "${PROJECT_ROOT}/.." && pwd)"
+CONTAINER_ROOT="${CONTAINER_PROJECTS_ROOT:-${HOST_ROOT}}"
 
 die() {
     echo "clang-tidy: $*" >&2
@@ -19,7 +19,7 @@ Usage:
   ${SCRIPT_PATH} [--container-root <dir>] [--host-root <dir>] <build-dir> [files...]
 
 Options:
-  --container-root <dir>  Container projects root (default: /home/artyom/Documents/projects)
+  --container-root <dir>  Container projects root (default: parent of this repo)
   --host-root <dir>       Host projects root (default: parent of this repo)
 EOF
 }

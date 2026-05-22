@@ -14,7 +14,7 @@ Options:
   --boot <mode>           Boot mode (default: no-mcuboot)
   --build-dir <dir>       Explicit build directory
   --output <file>         Output compile database (default: ./compile_commands.json)
-  --container-root <dir>  Container projects root (default: /home/artyom/Documents/projects)
+  --container-root <dir>  Container projects root (default: parent of this repo)
   --host-root <dir>       Host projects root (default: parent of this repo)
 EOF
 }
@@ -29,8 +29,8 @@ BUILD_PROFILE="debug"
 BOOT_MODE="no-mcuboot"
 BUILD_DIR=""
 OUTPUT_FILE="${PROJECT_ROOT}/compile_commands.json"
-CONTAINER_ROOT="${CONTAINER_PROJECTS_ROOT:-/home/artyom/Documents/projects}"
 HOST_ROOT="$(cd "${PROJECT_ROOT}/.." && pwd)"
+CONTAINER_ROOT="${CONTAINER_PROJECTS_ROOT:-${HOST_ROOT}}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

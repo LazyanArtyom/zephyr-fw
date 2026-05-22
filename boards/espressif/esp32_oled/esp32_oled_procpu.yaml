@@ -1,0 +1,17 @@
+identifier: esp32_oled/esp32/procpu
+name: ESP32 OLED PROCPU
+type: mcu
+arch: xtensa
+toolchain:
+  - zephyr
+supported:
+  - gpio
+  - i2c
+  - spi
+  - uart
+  - watchdog
+  - display
+  - input
+  - entropy
+  - netif:wifi
+vendor: espressif

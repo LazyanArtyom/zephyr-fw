@@ -15,7 +15,7 @@ build: esp32 debug mcuboot
 build: esp32 release mcuboot
 export compile_commands: esp32 debug no-mcuboot
 package: esp32 debug no-mcuboot
-flash: esp32 mac
+flash: esp32
 monitor: esp32 uart
 check: format
 check: clang-tidy
@@ -40,17 +40,9 @@ C/C++ extension IntelliSense and automatic clang-tidy runner are disabled in
 workspace settings so diagnostics come from one place.
 Recommended extensions are listed in `.vscode/extensions.json`.
 
-The exported compile database rewrites Docker paths such as:
-
-```text
-/home/artyom/Documents/projects
-```
-
-to the macOS project root:
-
-```text
-/Users/artyom/Documents/projects
-```
+The exported compile database can rewrite Docker paths when needed. Pass
+`--container-root` and `--host-root` if the build path inside Docker differs
+from the host path.
 
 It also strips Zephyr SDK flags that host clangd/clang-tidy do not understand.
 
@@ -77,4 +69,4 @@ Key meanings:
 | `F7` | Debug MCUboot build and refresh `compile_commands.json` |
 | `Shift+F7` | Release MCUboot build and refresh `compile_commands.json` |
 
-On macOS you may need `Fn + Fx` depending on system keyboard settings.
+Some keyboards require `Fn + Fx` depending on system settings.

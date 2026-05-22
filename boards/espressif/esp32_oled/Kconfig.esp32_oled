@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_ESP32_OLED
+	select SOC_ESP32_WROOM_32UE_N4
+	select SOC_ESP32_PROCPU if BOARD_ESP32_OLED_ESP32_PROCPU

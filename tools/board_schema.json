@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Zephyr FW board profile",
+  "title": "Zephyr FW board application metadata",
   "type": "object",
   "required": [
     "profile",

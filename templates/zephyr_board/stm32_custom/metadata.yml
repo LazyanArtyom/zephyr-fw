@@ -1,0 +1,11 @@
+profile: stm32_custom
+display_name: STM32 custom board template
+status: disabled
+zephyr_board: stm32_custom
+default_display: off
+default_boot: mcuboot
+serial_baud: 115200
+flash_runner: openocd
+flash_chip:
+flash_offset:
+description: Template for a real STM32 custom Zephyr board root.

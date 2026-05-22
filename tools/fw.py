@@ -32,8 +32,8 @@ def read_flat_yaml(path: pathlib.Path) -> dict[str, str]:
 
 def iter_board_profiles() -> list[tuple[pathlib.Path, dict[str, str]]]:
     boards: list[tuple[pathlib.Path, dict[str, str]]] = []
-    for board_yml in sorted(BOARDS_DIR.glob("*/board.yml")):
-        boards.append((board_yml, read_flat_yaml(board_yml)))
+    for metadata_yml in sorted(BOARDS_DIR.glob("*/*/metadata.yml")):
+        boards.append((metadata_yml, read_flat_yaml(metadata_yml)))
     return boards
 
 
@@ -42,20 +42,22 @@ def cmd_boards_list(_: argparse.Namespace) -> int:
     print()
 
     found = False
-    for board_yml, board in iter_board_profiles():
+    for metadata_yml, board in iter_board_profiles():
         found = True
-        profile = board.get("profile", board_yml.parent.name)
+        board_dir = metadata_yml.parent
+        profile = board.get("profile", board_dir.name)
         zephyr_board = board.get("zephyr_board") or "not configured"
         print(f"  {profile}")
         print(f"    Name          : {board.get('display_name', 'unknown')}")
         print(f"    Zephyr target : {zephyr_board}")
+        print(f"    Board dir     : {board_dir.relative_to(PROJECT_ROOT)}")
         print(f"    Status        : {board.get('status', 'unknown')}")
         print(f"    Display       : {board.get('default_display', 'off')}")
         print(f"    Default boot  : {board.get('default_boot', 'no-mcuboot')}")
         print()
 
     if not found:
-        print("  No boards/<profile>/board.yml files found.")
+        print("  No boards/<vendor>/<board>/metadata.yml files found.")
         print()
 
     print("Examples:")
@@ -68,21 +70,31 @@ def cmd_boards_list(_: argparse.Namespace) -> int:
 
 def cmd_boards_validate(_: argparse.Namespace) -> int:
     failures = 0
-    for board_yml, board in iter_board_profiles():
+    for metadata_yml, board in iter_board_profiles():
+        board_dir = metadata_yml.parent
         missing = [field for field in REQUIRED_BOARD_FIELDS if not board.get(field)]
         if missing:
             failures += 1
-            print(f"{board_yml}: missing {', '.join(missing)}", file=sys.stderr)
+            print(f"{metadata_yml}: missing {', '.join(missing)}", file=sys.stderr)
             continue
+        if not (board_dir / "board.yml").is_file():
+            failures += 1
+            print(f"{board_dir}: missing Zephyr board.yml", file=sys.stderr)
+        if not any(board_dir.glob("*.dts")):
+            failures += 1
+            print(f"{board_dir}: missing Zephyr devicetree (*.dts)", file=sys.stderr)
+        if not any(board_dir.glob("*_defconfig")):
+            failures += 1
+            print(f"{board_dir}: missing Zephyr board defconfig (*_defconfig)", file=sys.stderr)
         if board["status"] == "enabled" and not board.get("zephyr_board"):
             failures += 1
-            print(f"{board_yml}: enabled boards must set zephyr_board", file=sys.stderr)
+            print(f"{metadata_yml}: enabled boards must set zephyr_board", file=sys.stderr)
         if board["default_display"] not in ("on", "off"):
             failures += 1
-            print(f"{board_yml}: default_display must be on or off", file=sys.stderr)
+            print(f"{metadata_yml}: default_display must be on or off", file=sys.stderr)
         if board["default_boot"] not in ("no-mcuboot", "mcuboot"):
             failures += 1
-            print(f"{board_yml}: default_boot must be no-mcuboot or mcuboot", file=sys.stderr)
+            print(f"{metadata_yml}: default_boot must be no-mcuboot or mcuboot", file=sys.stderr)
 
     if failures:
         return 1

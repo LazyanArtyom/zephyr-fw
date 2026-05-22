@@ -185,12 +185,12 @@
       "problemMatcher": []
     },
     {
-      "label": "flash: esp32 mac",
+      "label": "flash: esp32",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/flash_esp32_mac.sh",
+      "command": "${workspaceFolder}/scripts/flash_esp32.sh",
       "args": [
         "--port",
-        "/dev/cu.usbserial-210",
+        "/dev/ttyUSB0",
         "--board",
         "esp32_oled",
         "--profile",
@@ -210,7 +210,7 @@
       "args": [
         "-b",
         "115200",
-        "/dev/cu.usbserial-210"
+        "/dev/ttyUSB0"
       ],
       "problemMatcher": []
     },

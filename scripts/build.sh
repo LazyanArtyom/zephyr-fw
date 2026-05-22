@@ -13,10 +13,10 @@ Usage:
   $0 <profile> [debug|release|production] [auto|clean|pristine|incremental|no]
 
 Options:
-  --board, -b <profile>       Board profile from boards/<profile>/board.yml
+  --board, -b <profile>       Board profile from boards/<vendor>/<board>/metadata.yml
   --profile, -p <profile>     Build profile: debug, release, production (default: debug)
   --mode, -m <mode>           Build mode: auto, clean, pristine, incremental, no (default: auto)
-  --boot <mode>               Boot mode: no-mcuboot, mcuboot (default: board.yml)
+  --boot <mode>               Boot mode: no-mcuboot, mcuboot (default: metadata.yml)
   --list-boards               Show available board profiles
   --help                      Show this help
 
@@ -46,6 +46,26 @@ read_yaml_value() {
             exit
         }
     ' "${file_path}"
+}
+
+find_board_metadata() {
+    local profile="$1"
+    local metadata_path
+    local metadata_profile
+
+    while IFS= read -r metadata_path; do
+        metadata_profile="$(read_yaml_value "${metadata_path}" profile)"
+        if [[ -z "${metadata_profile}" ]]; then
+            metadata_profile="$(basename "$(dirname "${metadata_path}")")"
+        fi
+
+        if [[ "${metadata_profile}" == "${profile}" ]]; then
+            printf '%s\n' "${metadata_path}"
+            return 0
+        fi
+    done < <(find "${PROJECT_ROOT}/boards" -mindepth 3 -maxdepth 3 -type f -name metadata.yml | sort)
+
+    return 1
 }
 
 join_by_semicolon() {
@@ -218,26 +238,29 @@ if [[ -z "${BOARD_PROFILE}" ]]; then
     exit 1
 fi
 
-BOARD_DIR="${PROJECT_ROOT}/boards/${BOARD_PROFILE}"
-BOARD_YML="${BOARD_DIR}/board.yml"
-[[ -f "${BOARD_YML}" ]] || die "board profile metadata not found: ${BOARD_YML}"
+BOARD_METADATA="$(find_board_metadata "${BOARD_PROFILE}")" \
+    || die "board profile metadata not found for '${BOARD_PROFILE}' under boards/<vendor>/<board>/metadata.yml"
+BOARD_DIR="$(dirname "${BOARD_METADATA}")"
+BOARD_ROOT="${PROJECT_ROOT}"
+BOARD_ZEPHYR_YML="${BOARD_DIR}/board.yml"
+[[ -f "${BOARD_ZEPHYR_YML}" ]] || die "Zephyr board.yml not found: ${BOARD_ZEPHYR_YML}"
 
-BOARD_STATUS="$(read_yaml_value "${BOARD_YML}" status)"
+BOARD_STATUS="$(read_yaml_value "${BOARD_METADATA}" status)"
 if [[ "${BOARD_STATUS}" != "enabled" ]]; then
     die "${BOARD_PROFILE} is not enabled yet (status: ${BOARD_STATUS:-unknown})"
 fi
 
-ZEPHYR_BOARD="$(read_yaml_value "${BOARD_YML}" zephyr_board)"
-[[ -n "${ZEPHYR_BOARD}" ]] || die "zephyr_board is missing in ${BOARD_YML}"
+ZEPHYR_BOARD="$(read_yaml_value "${BOARD_METADATA}" zephyr_board)"
+[[ -n "${ZEPHYR_BOARD}" ]] || die "zephyr_board is missing in ${BOARD_METADATA}"
 
-BOARD_DISPLAY_NAME="$(read_yaml_value "${BOARD_YML}" display_name)"
-BOARD_SERIAL_BAUD="$(read_yaml_value "${BOARD_YML}" serial_baud)"
-BOARD_FLASH_RUNNER="$(read_yaml_value "${BOARD_YML}" flash_runner)"
-BOARD_FLASH_CHIP="$(read_yaml_value "${BOARD_YML}" flash_chip)"
-BOARD_FLASH_OFFSET="$(read_yaml_value "${BOARD_YML}" flash_offset)"
-BOARD_DESCRIPTION="$(read_yaml_value "${BOARD_YML}" description)"
-DEFAULT_DISPLAY="$(read_yaml_value "${BOARD_YML}" default_display)"
-DEFAULT_BOOT="$(read_yaml_value "${BOARD_YML}" default_boot)"
+BOARD_DISPLAY_NAME="$(read_yaml_value "${BOARD_METADATA}" display_name)"
+BOARD_SERIAL_BAUD="$(read_yaml_value "${BOARD_METADATA}" serial_baud)"
+BOARD_FLASH_RUNNER="$(read_yaml_value "${BOARD_METADATA}" flash_runner)"
+BOARD_FLASH_CHIP="$(read_yaml_value "${BOARD_METADATA}" flash_chip)"
+BOARD_FLASH_OFFSET="$(read_yaml_value "${BOARD_METADATA}" flash_offset)"
+BOARD_DESCRIPTION="$(read_yaml_value "${BOARD_METADATA}" description)"
+DEFAULT_DISPLAY="$(read_yaml_value "${BOARD_METADATA}" default_display)"
+DEFAULT_BOOT="$(read_yaml_value "${BOARD_METADATA}" default_boot)"
 BOOT_MODE="${BOOT_MODE:-${DEFAULT_BOOT:-no-mcuboot}}"
 
 case "${BUILD_PROFILE}" in
@@ -309,9 +332,9 @@ fi
 
 COMMON_CONF="${PROJECT_ROOT}/prj.conf"
 LOGGING_CONF="${PROJECT_ROOT}/configs/features/logging.conf"
-BOARD_CONF="${BOARD_DIR}/board.conf"
+BOARD_CONF="${BOARD_DIR}/app.conf"
 BOARD_PROFILE_CONF="${BOARD_DIR}/${BUILD_PROFILE}.conf"
-BOARD_OVERLAY="${BOARD_DIR}/board.overlay"
+BOARD_OVERLAY="${BOARD_DIR}/app.overlay"
 
 CONF_FILES=()
 add_conf_if_exists "${COMMON_CONF}"
@@ -366,6 +389,9 @@ fi
 echo "Project root   : ${PROJECT_ROOT}"
 echo "Firmware       : ${APP_FIRMWARE_NAME}"
 echo "Board profile  : ${BOARD_PROFILE}"
+echo "Board dir      : ${BOARD_DIR}"
+echo "Board metadata : ${BOARD_METADATA}"
+echo "Board root     : ${BOARD_ROOT}"
 echo "Zephyr board   : ${ZEPHYR_BOARD}"
 echo "Build profile  : ${BUILD_PROFILE}"
 echo "Build mode     : ${BUILD_MODE}"
@@ -375,12 +401,16 @@ elif [[ -n "${BUILD_DIR_RESET_REASON}" ]]; then
     echo "Build reset    : ${BUILD_DIR_RESET_REASON}"
 fi
 echo "Boot mode      : ${BOOT_MODE}"
-echo "Display        : ${DISPLAY_MODE} (from board.yml)"
+echo "Display        : ${DISPLAY_MODE} (from metadata.yml)"
 echo "Shell          : ${SHELL_MODE} (profile policy)"
 echo "Asserts        : ${ASSERTS_MODE} (profile policy)"
 echo "Build dir      : ${BUILD_DIR}"
 echo "Conf files     : ${CONF_FILE_ARG}"
-echo "Overlay        : ${BOARD_OVERLAY}"
+if [[ -f "${BOARD_OVERLAY}" ]]; then
+    echo "Overlay        : ${BOARD_OVERLAY}"
+else
+    echo "Overlay        : <none>"
+fi
 echo "West command   : ${WEST_CMD[*]}"
 if [[ -n "${WEST_WORKDIR}" ]]; then
     echo "West workdir   : ${WEST_WORKDIR}"
@@ -394,7 +424,7 @@ BUILD_COMMAND=(
     "${PROJECT_ROOT}"
     --
     -DCONF_FILE="${CONF_FILE_ARG}"
-    -DDTC_OVERLAY_FILE="${BOARD_OVERLAY}"
+    -DBOARD_ROOT="${BOARD_ROOT}"
     -DAPP_BUILD_PROFILE="${BUILD_PROFILE}"
     -DAPP_BOARD_PROFILE="${BOARD_PROFILE}"
     -DAPP_BOARD_DISPLAY_NAME="${BOARD_DISPLAY_NAME:-${BOARD_PROFILE}}"
@@ -409,6 +439,10 @@ BUILD_COMMAND=(
     -DZEPHYR_BASE="${ZEPHYR_BASE}"
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 )
+
+if [[ -f "${BOARD_OVERLAY}" ]]; then
+    BUILD_COMMAND+=(-DDTC_OVERLAY_FILE="${BOARD_OVERLAY}")
+fi
 
 if [[ -n "${WEST_WORKDIR}" ]]; then
     (cd "${WEST_WORKDIR}" && "${BUILD_COMMAND[@]}")

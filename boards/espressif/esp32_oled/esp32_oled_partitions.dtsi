@@ -1,0 +1,9 @@
+/*
+ * ESP32 simple-boot partition layout.
+ *
+ * The concrete layout comes from the Espressif HAL module used by Zephyr.
+ * Keeping this include behind a board-local file gives the project a clear
+ * place to replace it with custom MCUboot/NVS/storage partitions later.
+ */
+
+#include <espressif/partitions_0x1000_amp.dtsi>
