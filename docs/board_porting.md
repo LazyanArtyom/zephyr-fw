@@ -74,8 +74,8 @@ Package/flash metadata     -> metadata.yml and flash.conf
 Shared application features -> configs/features or profile fragments
 ```
 
-Keep placeholders outside `boards/` until they describe real hardware. Use
-`templates/zephyr_board/stm32_custom/` as the starting point for STM32 custom
-hardware.
+Keep placeholders out of the repository until they describe real hardware. Use
+`boards/espressif/esp32_oled/` as the reference implementation when adding a
+new board.
 
 Do not hardcode board pins in C++ code.

@@ -1,6 +1,0 @@
-board:
-  name: stm32_custom
-  full_name: STM32 custom board template
-  vendor: others
-  socs:
-    - name: stm32u5a9xx
