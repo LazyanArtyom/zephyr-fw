@@ -35,7 +35,8 @@ void PrintBoardInfo(const shell* shell) {
     shell_print(shell, "Zephyr version: %s", board_info.zephyr_version().c_str());
     shell_print(shell, "Toolchain: %s", board_info.toolchain_variant().c_str());
     shell_print(shell, "SDK path: %s", board_info.zephyr_sdk_install_dir().c_str());
-    shell_print(shell, "Compiler: %s %s", board_info.compiler_id().c_str(), board_info.compiler_version().c_str());
+    shell_print(shell, "Compiler: %s %s", board_info.compiler_id().c_str(),
+                board_info.compiler_version().c_str());
     shell_print(shell, "Architecture: %s", board_info.architecture().c_str());
     shell_print(shell, "SoC: %s", board_info.soc_name().c_str());
     shell_print(shell, "SoC family: %s", board_info.soc_family().c_str());
@@ -61,7 +62,8 @@ void PrintBoardInfo(const shell* shell) {
     shell_print(shell, "  mcuboot: %s", EnabledDisabled(board_info.mcuboot_enabled()));
     shell_print(shell, "Settings backend: %s", board_info.settings_backend().c_str());
     shell_print(shell, "Settings backend status: %s", board_info.settings_backend_status().c_str());
-    shell_print(shell, "Storage partition status: %s", board_info.storage_partition_status().c_str());
+    shell_print(shell, "Storage partition status: %s",
+                board_info.storage_partition_status().c_str());
 }
 
 int CmdBoardInfo(const shell* shell, size_t argc, char** argv) {

@@ -1,0 +1,37 @@
+{
+  "name": "zephyr-fw",
+  "image": "ubuntu26-zephyr:latest",
+  "remoteUser": "${localEnv:USER}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/${localEnv:USER}/Documents/projects/zephyr-fw,type=bind,consistency=delegated",
+  "workspaceFolder": "/home/${localEnv:USER}/Documents/projects/zephyr-fw",
+  "containerEnv": {
+    "ZEPHYR_BASE": "/opt/zephyrproject/zephyr",
+    "ZEPHYR_TOOLCHAIN_VARIANT": "zephyr",
+    "ZEPHYR_SDK_INSTALL_DIR": "/opt/zephyr-sdk-1.0.1",
+    "USE_HOST_ZEPHYR": "0"
+  },
+  "postCreateCommand": "if ! command -v clangd >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y --no-install-recommends clangd clang-format clang-tidy; fi",
+  "runArgs": [
+    "--hostname",
+    "ubuntu26-zephyr"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools"
+      ],
+      "settings": {
+        "C_Cpp.intelliSenseEngine": "disabled",
+        "C_Cpp.errorSquiggles": "disabled",
+        "clangd.path": "/usr/bin/clangd",
+        "clangd.arguments": [
+          "--compile-commands-dir=${workspaceFolder}/build/esp32_oled/debug/no-mcuboot",
+          "--background-index"
+        ],
+        "cmake.configureOnOpen": false
+      }
+    }
+  }
+}

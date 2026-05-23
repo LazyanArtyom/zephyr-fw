@@ -324,6 +324,18 @@ BUILD_DIR="${PROJECT_ROOT}/build/${BOARD_PROFILE}/${BUILD_PROFILE}/${BOOT_MODE}"
 GENERATED_CONF_DIR="${PROJECT_ROOT}/build/generated-configs/${BOARD_PROFILE}/${BUILD_PROFILE}/${BOOT_MODE}"
 mkdir -p "${GENERATED_CONF_DIR}"
 
+# Keep tool-generated caches inside the project build tree. Docker images, host
+# shells, and CI runners can disagree about HOME ownership; project-local caches
+# make ccache and Zephyr's CMake package cache deterministic and writable.
+BUILD_CACHE_DIR="${PROJECT_ROOT}/build/.cache"
+BUILD_CCACHE_DIR="${PROJECT_ROOT}/build/.ccache"
+mkdir -p "${BUILD_CACHE_DIR}" "${BUILD_CCACHE_DIR}/tmp"
+
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${BUILD_CACHE_DIR}}"
+export ZEPHYR_CACHE_DIR="${ZEPHYR_CACHE_DIR:-${BUILD_CACHE_DIR}/zephyr}"
+export CCACHE_DIR="${CCACHE_DIR:-${BUILD_CCACHE_DIR}}"
+export CCACHE_TEMPDIR="${CCACHE_TEMPDIR:-${BUILD_CCACHE_DIR}/tmp}"
+
 GENERATED_SHELL_PROMPT_CONF="${GENERATED_CONF_DIR}/shell_prompt.conf"
 if [[ "${SHELL_MODE}" == "on" ]]; then
     printf 'CONFIG_SHELL_PROMPT_UART="%s"\n' "$(escape_kconfig_string "${APP_SHELL_PROMPT}")" \
