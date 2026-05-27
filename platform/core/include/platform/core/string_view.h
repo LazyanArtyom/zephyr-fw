@@ -8,7 +8,8 @@ namespace platform {
 class StringView final {
    public:
     constexpr StringView() = default;
-    constexpr StringView(const char* text) : data_(text == nullptr ? "" : text), size_(Length(data_)) {}
+    constexpr StringView(const char* text)
+        : data_(text == nullptr ? "" : text), size_(Length(data_)) {}
 
     [[nodiscard]] constexpr const char* data() const {
         return data_;
@@ -21,6 +22,9 @@ class StringView final {
     }
     [[nodiscard]] constexpr bool empty() const {
         return size_ == 0;
+    }
+    [[nodiscard]] constexpr char operator[](std::size_t index) const {
+        return index < size_ ? data_[index] : '\0';
     }
 
     [[nodiscard]] constexpr bool equals(StringView other) const {

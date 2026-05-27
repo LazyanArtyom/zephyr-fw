@@ -1,76 +1,70 @@
 #include <platform/board/board_info.h>
 #include <platform/core/clock.h>
 #include <platform/core/reset_info.h>
+#include <platform/shell/console.h>
 #include <zephyr/shell/shell.h>
 
 namespace {
 
-const char* EnabledDisabled(bool enabled) {
-    return enabled ? "enabled" : "disabled";
-}
-
-void PrintBoardInfo(const shell* shell) {
+void PrintBoardInfo(const platform::shell::Console& output) {
     const platform::BoardInfo& board_info = platform::BoardInfo::Current();
 
-    shell_print(shell, "Firmware: %s", board_info.display_name().c_str());
-    shell_print(shell, "Name: %s", board_info.firmware_name().c_str());
-    shell_print(shell, "Version: %s%s", board_info.firmware_version().c_str(),
-                board_info.is_git_dirty() ? "-dirty" : "");
-    shell_print(shell, "Git commit: %s%s", board_info.git_commit().c_str(),
-                board_info.is_git_dirty() ? " (dirty)" : "");
-    shell_print(shell, "Build time: %s", board_info.build_timestamp().c_str());
-    shell_print(shell, "Build profile: %s", board_info.build_profile().c_str());
-    shell_print(shell, "Boot mode: %s", board_info.boot_mode().c_str());
-    shell_print(shell, "Display mode: %s", board_info.display_mode().c_str());
-    shell_print(shell, "");
-    shell_print(shell, "Board:");
-    shell_print(shell, "Board profile: %s", board_info.board_profile().c_str());
-    shell_print(shell, "Board name: %s", board_info.board_name().c_str());
-    shell_print(shell, "Board status: %s", board_info.board_status().c_str());
-    shell_print(shell, "Serial baud: %s", board_info.board_serial_baud().c_str());
-    shell_print(shell, "Zephyr board: %s", board_info.zephyr_board_target().c_str());
-    shell_print(shell, "Description: %s", board_info.board_description().c_str());
-    shell_print(shell, "");
-    shell_print(shell, "Platform:");
-    shell_print(shell, "Zephyr version: %s", board_info.zephyr_version().c_str());
-    shell_print(shell, "Toolchain: %s", board_info.toolchain_variant().c_str());
-    shell_print(shell, "SDK path: %s", board_info.zephyr_sdk_install_dir().c_str());
-    shell_print(shell, "Compiler: %s %s", board_info.compiler_id().c_str(),
-                board_info.compiler_version().c_str());
-    shell_print(shell, "Architecture: %s", board_info.architecture().c_str());
-    shell_print(shell, "SoC: %s", board_info.soc_name().c_str());
-    shell_print(shell, "SoC family: %s", board_info.soc_family().c_str());
-    shell_print(shell, "SoC series: %s", board_info.soc_series().c_str());
-    shell_print(shell, "SoC part: %s", board_info.soc_part_number().c_str());
-    shell_print(shell, "");
-    shell_print(shell, "Flash:");
-    shell_print(shell, "  runner: %s", board_info.flash_runner().c_str());
-    shell_print(shell, "  chip: %s", board_info.flash_chip().c_str());
-    shell_print(shell, "  offset: %s", board_info.flash_offset().c_str());
-    shell_print(shell, "");
-    shell_print(shell, "Runtime:");
-    shell_print(shell, "Reset reason: %s", platform::ResetInfo::Current().reason_text().c_str());
-    shell_print(shell, "Uptime: %lld ms",
-                static_cast<long long>(platform::Clock::UptimeMilliseconds()));
-    shell_print(shell, "");
-    shell_print(shell, "Enabled features:");
-    shell_print(shell, "  shell: %s", EnabledDisabled(board_info.shell_enabled()));
-    shell_print(shell, "  display: %s", EnabledDisabled(board_info.display_enabled()));
-    shell_print(shell, "  i2c: %s", EnabledDisabled(board_info.i2c_enabled()));
-    shell_print(shell, "  settings: %s", EnabledDisabled(board_info.settings_enabled()));
-    shell_print(shell, "  flash: %s", EnabledDisabled(board_info.flash_enabled()));
-    shell_print(shell, "  mcuboot: %s", EnabledDisabled(board_info.mcuboot_enabled()));
-    shell_print(shell, "Settings backend: %s", board_info.settings_backend().c_str());
-    shell_print(shell, "Settings backend status: %s", board_info.settings_backend_status().c_str());
-    shell_print(shell, "Storage partition status: %s",
-                board_info.storage_partition_status().c_str());
+    output.field("Firmware", board_info.display_name());
+    output.field("Name", board_info.firmware_name());
+    output.field_with_suffix("Version", board_info.firmware_version(),
+                             board_info.is_git_dirty() ? "-dirty" : "");
+    output.field_with_suffix("Git commit", board_info.git_commit(),
+                             board_info.is_git_dirty() ? " (dirty)" : "");
+    output.field("Build time", board_info.build_timestamp());
+    output.field("Build profile", board_info.build_profile());
+    output.field("Boot mode", board_info.boot_mode());
+    output.field("Display mode", board_info.display_mode());
+    output.blank_line();
+    output.section("Board");
+    output.field("Board profile", board_info.board_profile());
+    output.field("Board name", board_info.board_name());
+    output.field("Board status", board_info.board_status());
+    output.field("Serial baud", board_info.board_serial_baud());
+    output.field("Zephyr board", board_info.zephyr_board_target());
+    output.field("Description", board_info.board_description());
+    output.blank_line();
+    output.section("Platform");
+    output.field("Zephyr version", board_info.zephyr_version());
+    output.field("Toolchain", board_info.toolchain_variant());
+    output.field("SDK path", board_info.zephyr_sdk_install_dir());
+    output.field_pair("Compiler", board_info.compiler_id(), " ", board_info.compiler_version());
+    output.field("Architecture", board_info.architecture());
+    output.field("SoC", board_info.soc_name());
+    output.field("SoC family", board_info.soc_family());
+    output.field("SoC series", board_info.soc_series());
+    output.field("SoC part", board_info.soc_part_number());
+    output.blank_line();
+    output.section("Flash");
+    output.subfield("runner", board_info.flash_runner());
+    output.subfield("chip", board_info.flash_chip());
+    output.subfield("offset", board_info.flash_offset());
+    output.blank_line();
+    output.section("Runtime");
+    output.field("Reset reason", platform::ResetInfo::Current().reason_text());
+    output.integer_field("Uptime", platform::Clock::UptimeMilliseconds(), "ms");
+    output.blank_line();
+    output.section("Enabled features");
+    output.feature("shell", board_info.shell_enabled());
+    output.feature("display", board_info.display_enabled());
+    output.feature("i2c", board_info.i2c_enabled());
+    output.feature("settings", board_info.settings_enabled());
+    output.feature("flash", board_info.flash_enabled());
+    output.feature("mcuboot", board_info.mcuboot_enabled());
+    output.field("Settings backend", board_info.settings_backend());
+    output.field("Settings backend status", board_info.settings_backend_status());
+    output.field("Storage partition status", board_info.storage_partition_status());
 }
 
 int CmdBoardInfo(const shell* shell, size_t argc, char** argv) {
     (void)argc;
     (void)argv;
 
-    PrintBoardInfo(shell);
+    PrintBoardInfo(platform::shell::Console(shell));
     return 0;
 }
 
@@ -79,14 +73,15 @@ int CmdBoardCaps(const shell* shell, size_t argc, char** argv) {
     (void)argv;
 
     const platform::BoardInfo& board_info = platform::BoardInfo::Current();
+    const platform::shell::Console output(shell);
 
-    shell_print(shell, "Capabilities:");
-    shell_print(shell, "  shell: %s", EnabledDisabled(board_info.shell_enabled()));
-    shell_print(shell, "  display: %s", EnabledDisabled(board_info.display_enabled()));
-    shell_print(shell, "  i2c: %s", EnabledDisabled(board_info.i2c_enabled()));
-    shell_print(shell, "  settings: %s", EnabledDisabled(board_info.settings_enabled()));
-    shell_print(shell, "  flash: %s", EnabledDisabled(board_info.flash_enabled()));
-    shell_print(shell, "  mcuboot: %s", EnabledDisabled(board_info.mcuboot_enabled()));
+    output.section("Capabilities");
+    output.feature("shell", board_info.shell_enabled());
+    output.feature("display", board_info.display_enabled());
+    output.feature("i2c", board_info.i2c_enabled());
+    output.feature("settings", board_info.settings_enabled());
+    output.feature("flash", board_info.flash_enabled());
+    output.feature("mcuboot", board_info.mcuboot_enabled());
     return 0;
 }
 

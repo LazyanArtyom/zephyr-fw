@@ -1,67 +1,61 @@
+#include <errno.h>
 #include <platform/core/clock.h>
 #include <platform/core/reset_info.h>
+#include <platform/core/string_view.h>
+#include <platform/shell/console.h>
 #include <zephyr/shell/shell.h>
-
-#include <errno.h>
-#include <string.h>
 
 namespace {
 
-int PrintSystemHelp(const shell* shell) {
-    shell_print(shell, "Usage:");
-    shell_print(shell, "  system uptime");
-    shell_print(shell, "  system reset-reason");
-    shell_print(shell, "  system reboot");
+int PrintSystemHelp(const platform::shell::Console& output) {
+    output.line("Usage:");
+    output.line("  system uptime");
+    output.line("  system reset-reason");
+    output.line("  system reboot");
     return 0;
 }
 
-int CmdUptime(const shell* shell, size_t argc, char** argv) {
-    (void)argc;
-    (void)argv;
-
-    shell_print(shell, "Uptime: %lld ms",
-                static_cast<long long>(platform::Clock::UptimeMilliseconds()));
+int PrintUptime(const platform::shell::Console& output) {
+    output.integer_field("Uptime", platform::Clock::UptimeMilliseconds(), "ms");
     return 0;
 }
 
-int CmdResetReason(const shell* shell, size_t argc, char** argv) {
-    (void)argc;
-    (void)argv;
-
+int PrintResetReason(const platform::shell::Console& output) {
     const platform::ResetInfo reset_info = platform::ResetInfo::Current();
 
-    shell_print(shell, "Reset reason: %s", reset_info.reason_text().c_str());
+    output.field("Reset reason", reset_info.reason_text());
     return 0;
 }
 
-int CmdReboot(const shell* shell, size_t argc, char** argv) {
-    (void)argc;
-    (void)argv;
-
-    shell_print(shell, "Rebooting...");
+int Reboot(const platform::shell::Console& output) {
+    output.line("Rebooting...");
     platform::Clock::SleepMilliseconds(100);
     platform::ResetInfo::RequestColdReboot();
     return 0;
 }
 
 int CmdSystem(const shell* shell, size_t argc, char** argv) {
-    if (argc < 2) {
-        return PrintSystemHelp(shell);
+    const platform::shell::Console output(shell);
+    const platform::shell::Arguments arguments(argc, argv);
+
+    if (arguments.size() < 2) {
+        return PrintSystemHelp(output);
     }
 
-    if (strcmp(argv[1], "uptime") == 0) {
-        return CmdUptime(shell, argc - 1, &argv[1]);
+    const platform::StringView command = arguments.at(1);
+    if (command.equals("uptime")) {
+        return PrintUptime(output);
     }
 
-    if (strcmp(argv[1], "reset-reason") == 0) {
-        return CmdResetReason(shell, argc - 1, &argv[1]);
+    if (command.equals("reset-reason")) {
+        return PrintResetReason(output);
     }
 
-    if (strcmp(argv[1], "reboot") == 0) {
-        return CmdReboot(shell, argc - 1, &argv[1]);
+    if (command.equals("reboot")) {
+        return Reboot(output);
     }
 
-    shell_error(shell, "unknown system command: %s", argv[1]);
+    output.error_value("unknown system command", command);
     return -EINVAL;
 }
 

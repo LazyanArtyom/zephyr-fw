@@ -48,7 +48,7 @@ class I2cBus final {
     constexpr I2cBus(std::uint8_t index, DeviceRef device, StringView name, StringView device_name)
         : index_(index), device_(device), name_(name), device_name_(device_name) {}
 
-    [[nodiscard]] static Result<I2cBus> Resolve(const char* bus_spec);
+    [[nodiscard]] static Result<I2cBus> Resolve(StringView bus_spec);
 
     [[nodiscard]] constexpr std::uint8_t index() const {
         return index_;

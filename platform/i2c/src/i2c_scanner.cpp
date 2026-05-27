@@ -1,69 +1,77 @@
+#include <errno.h>
 #include <platform/i2c/i2c_scanner.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/i2c.h>
-
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
 
 namespace {
 
 struct BusDescriptor {
     std::uint8_t index;
     const device* dev;
-    const char* name;
-    const char* device_name;
+    platform::StringView name;
+    platform::StringView device_name;
 };
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c0), okay)
 #define FW_I2C0_ENTRY \
-    { 0, DEVICE_DT_GET(DT_NODELABEL(i2c0)), "i2c0", DEVICE_DT_NAME(DT_NODELABEL(i2c0)) },
+    {0, DEVICE_DT_GET(DT_NODELABEL(i2c0)), "i2c0", DEVICE_DT_NAME(DT_NODELABEL(i2c0))},
 #else
 #define FW_I2C0_ENTRY
 #endif
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c1), okay)
 #define FW_I2C1_ENTRY \
-    { 1, DEVICE_DT_GET(DT_NODELABEL(i2c1)), "i2c1", DEVICE_DT_NAME(DT_NODELABEL(i2c1)) },
+    {1, DEVICE_DT_GET(DT_NODELABEL(i2c1)), "i2c1", DEVICE_DT_NAME(DT_NODELABEL(i2c1))},
 #else
 #define FW_I2C1_ENTRY
 #endif
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c2), okay)
 #define FW_I2C2_ENTRY \
-    { 2, DEVICE_DT_GET(DT_NODELABEL(i2c2)), "i2c2", DEVICE_DT_NAME(DT_NODELABEL(i2c2)) },
+    {2, DEVICE_DT_GET(DT_NODELABEL(i2c2)), "i2c2", DEVICE_DT_NAME(DT_NODELABEL(i2c2))},
 #else
 #define FW_I2C2_ENTRY
 #endif
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c3), okay)
 #define FW_I2C3_ENTRY \
-    { 3, DEVICE_DT_GET(DT_NODELABEL(i2c3)), "i2c3", DEVICE_DT_NAME(DT_NODELABEL(i2c3)) },
+    {3, DEVICE_DT_GET(DT_NODELABEL(i2c3)), "i2c3", DEVICE_DT_NAME(DT_NODELABEL(i2c3))},
 #else
 #define FW_I2C3_ENTRY
 #endif
 
 constexpr BusDescriptor kBuses[] = {
-    FW_I2C0_ENTRY
-    FW_I2C1_ENTRY
-    FW_I2C2_ENTRY
-    FW_I2C3_ENTRY
-    { 0xff, nullptr, "", "" },
+    FW_I2C0_ENTRY FW_I2C1_ENTRY FW_I2C2_ENTRY FW_I2C3_ENTRY{0xff, nullptr, "", ""},
 };
 
-bool IsUnsignedInteger(const char* value) {
-    if (value == nullptr || value[0] == '\0') {
+bool IsUnsignedInteger(platform::StringView value) {
+    if (value.empty()) {
         return false;
     }
 
-    for (const char* cursor = value; *cursor != '\0'; ++cursor) {
-        if (*cursor < '0' || *cursor > '9') {
+    for (std::size_t index = 0; index < value.size(); ++index) {
+        if (value[index] < '0' || value[index] > '9') {
             return false;
         }
     }
 
     return true;
+}
+
+platform::Result<std::uint8_t> ParseIndex(platform::StringView value) {
+    std::uint16_t index_value = 0;
+
+    for (std::size_t index = 0; index < value.size(); ++index) {
+        index_value = static_cast<std::uint16_t>(index_value * 10U +
+                                                 static_cast<std::uint16_t>(value[index] - '0'));
+        if (index_value > 0xffU) {
+            return platform::Result<std::uint8_t>::FromStatus(
+                platform::Status::InvalidArgument("i2c bus index is too large"));
+        }
+    }
+
+    return platform::Result<std::uint8_t>::FromValue(static_cast<std::uint8_t>(index_value));
 }
 
 platform::Result<platform::I2cBus> BusFromDescriptor(const BusDescriptor& descriptor) {
@@ -80,10 +88,10 @@ platform::Result<platform::I2cBus> BusFromDescriptor(const BusDescriptor& descri
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c0), okay)
 bool I2c0ClaimsAddress(std::uint8_t address) {
-#define FW_I2C_CHECK_CHILD(child)                    \
-    if (DT_NODE_HAS_STATUS(child, okay) &&           \
+#define FW_I2C_CHECK_CHILD(child)                                   \
+    if (DT_NODE_HAS_STATUS(child, okay) &&                          \
         address == static_cast<std::uint8_t>(DT_REG_ADDR(child))) { \
-        return true;                                 \
+        return true;                                                \
     }
     DT_FOREACH_CHILD(DT_NODELABEL(i2c0), FW_I2C_CHECK_CHILD)
 #undef FW_I2C_CHECK_CHILD
@@ -97,10 +105,10 @@ bool I2c0ClaimsAddress(std::uint8_t) {
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c1), okay)
 bool I2c1ClaimsAddress(std::uint8_t address) {
-#define FW_I2C_CHECK_CHILD(child)                    \
-    if (DT_NODE_HAS_STATUS(child, okay) &&           \
+#define FW_I2C_CHECK_CHILD(child)                                   \
+    if (DT_NODE_HAS_STATUS(child, okay) &&                          \
         address == static_cast<std::uint8_t>(DT_REG_ADDR(child))) { \
-        return true;                                 \
+        return true;                                                \
     }
     DT_FOREACH_CHILD(DT_NODELABEL(i2c1), FW_I2C_CHECK_CHILD)
 #undef FW_I2C_CHECK_CHILD
@@ -114,10 +122,10 @@ bool I2c1ClaimsAddress(std::uint8_t) {
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c2), okay)
 bool I2c2ClaimsAddress(std::uint8_t address) {
-#define FW_I2C_CHECK_CHILD(child)                    \
-    if (DT_NODE_HAS_STATUS(child, okay) &&           \
+#define FW_I2C_CHECK_CHILD(child)                                   \
+    if (DT_NODE_HAS_STATUS(child, okay) &&                          \
         address == static_cast<std::uint8_t>(DT_REG_ADDR(child))) { \
-        return true;                                 \
+        return true;                                                \
     }
     DT_FOREACH_CHILD(DT_NODELABEL(i2c2), FW_I2C_CHECK_CHILD)
 #undef FW_I2C_CHECK_CHILD
@@ -131,10 +139,10 @@ bool I2c2ClaimsAddress(std::uint8_t) {
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c3), okay)
 bool I2c3ClaimsAddress(std::uint8_t address) {
-#define FW_I2C_CHECK_CHILD(child)                    \
-    if (DT_NODE_HAS_STATUS(child, okay) &&           \
+#define FW_I2C_CHECK_CHILD(child)                                   \
+    if (DT_NODE_HAS_STATUS(child, okay) &&                          \
         address == static_cast<std::uint8_t>(DT_REG_ADDR(child))) { \
-        return true;                                 \
+        return true;                                                \
     }
     DT_FOREACH_CHILD(DT_NODELABEL(i2c3), FW_I2C_CHECK_CHILD)
 #undef FW_I2C_CHECK_CHILD
@@ -150,22 +158,22 @@ bool I2c3ClaimsAddress(std::uint8_t) {
 
 namespace platform {
 
-Result<I2cBus> I2cBus::Resolve(const char* bus_spec) {
-    if (bus_spec == nullptr || bus_spec[0] == '\0') {
+Result<I2cBus> I2cBus::Resolve(StringView bus_spec) {
+    if (bus_spec.empty()) {
         return Result<I2cBus>::FromStatus(Status::InvalidArgument("missing i2c bus"));
     }
 
     if (IsUnsignedInteger(bus_spec)) {
-        const unsigned long requested_index = strtoul(bus_spec, nullptr, 10);
-        if (requested_index > 0xffUL) {
-            return Result<I2cBus>::FromStatus(Status::InvalidArgument("i2c bus index is too large"));
+        const Result<std::uint8_t> index_result = ParseIndex(bus_spec);
+        if (!index_result.ok()) {
+            return Result<I2cBus>::FromStatus(index_result.status());
         }
 
         for (const BusDescriptor& descriptor : kBuses) {
             if (descriptor.dev == nullptr) {
                 continue;
             }
-            if (descriptor.index == static_cast<std::uint8_t>(requested_index)) {
+            if (descriptor.index == index_result.value()) {
                 return BusFromDescriptor(descriptor);
             }
         }
@@ -177,7 +185,7 @@ Result<I2cBus> I2cBus::Resolve(const char* bus_spec) {
         if (descriptor.dev == nullptr) {
             continue;
         }
-        if (strcmp(bus_spec, descriptor.name) == 0 || strcmp(bus_spec, descriptor.device_name) == 0) {
+        if (bus_spec.equals(descriptor.name) || bus_spec.equals(descriptor.device_name)) {
             return BusFromDescriptor(descriptor);
         }
     }
