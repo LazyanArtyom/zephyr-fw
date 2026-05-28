@@ -21,6 +21,7 @@ zephyr.map
 zephyr.dts
 zephyr.config
 build_info.yml
+manifest.json
 firmware.meta.json
 firmware.sha256
 flash.sh
@@ -51,7 +52,7 @@ partition_policy.md
 production.yml
 ```
 
-`manifest.json` is a copy of `firmware.meta.json` for tools that expect a
-literal manifest filename. The manifest records slot sizing, scratch policy,
+`manifest.json` is canonical. `firmware.meta.json` is retained as a compatibility
+copy for older tools. The manifest records slot sizing, scratch policy,
 settings partition, signing key policy, rollback policy, factory reset behavior,
 and recovery process from the board production policy.

@@ -17,7 +17,7 @@ The primary build entry point is:
 
 Board hardware is selected by Zephyr board-root files under
 `boards/<vendor>/<board>/`. Application policy is selected by `metadata.yml`,
-`app.conf`, and profile/config fragments. Use
+`board.conf`, and profile/config fragments. Use
 `scripts/package.sh` after a successful build when you need distributable
 artifacts.
 
@@ -41,7 +41,7 @@ The build script composes config fragments in this order:
 ```text
 prj.conf
 configs/features/logging.conf
-boards/<vendor>/<board>/app.conf
+boards/<vendor>/<board>/board.conf
 configs/profiles/<profile>.conf
 boards/<vendor>/<board>/<profile>.conf
 configs/boot/<boot>.conf

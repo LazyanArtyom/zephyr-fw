@@ -18,7 +18,7 @@ Board profile policy:
 
 ```text
 boards/<vendor>/<board>/metadata.yml
-boards/<vendor>/<board>/app.conf
+boards/<vendor>/<board>/board.conf
 boards/<vendor>/<board>/<profile>.conf
 boards/<vendor>/<board>/flash.conf
 ```

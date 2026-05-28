@@ -4,38 +4,11 @@ import argparse
 import pathlib
 import sys
 
+from board_metadata import PROJECT_ROOT, REQUIRED_BOARD_FIELDS, iter_board_profiles, print_shell_environment, require_board_profile
+from firmware_package import PackageError, PackageOptions, create_package
 
-PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]
+
 BOARDS_DIR = PROJECT_ROOT / "boards"
-
-
-REQUIRED_BOARD_FIELDS = (
-    "profile",
-    "display_name",
-    "status",
-    "default_display",
-    "default_settings",
-    "default_boot",
-    "serial_baud",
-)
-
-
-def read_flat_yaml(path: pathlib.Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#") or ":" not in stripped:
-            continue
-        key, value = stripped.split(":", 1)
-        values[key.strip()] = value.strip().strip('"')
-    return values
-
-
-def iter_board_profiles() -> list[tuple[pathlib.Path, dict[str, str]]]:
-    boards: list[tuple[pathlib.Path, dict[str, str]]] = []
-    for metadata_yml in sorted(BOARDS_DIR.glob("*/*/metadata.yml")):
-        boards.append((metadata_yml, read_flat_yaml(metadata_yml)))
-    return boards
 
 
 def cmd_boards_list(_: argparse.Namespace) -> int:
@@ -43,12 +16,11 @@ def cmd_boards_list(_: argparse.Namespace) -> int:
     print()
 
     found = False
-    for metadata_yml, board in iter_board_profiles():
+    for board in iter_board_profiles():
         found = True
-        board_dir = metadata_yml.parent
-        profile = board.get("profile", board_dir.name)
+        board_dir = board.board_dir
         zephyr_board = board.get("zephyr_board") or "not configured"
-        print(f"  {profile}")
+        print(f"  {board.profile}")
         print(f"    Name          : {board.get('display_name', 'unknown')}")
         print(f"    Zephyr target : {zephyr_board}")
         print(f"    Board dir     : {board_dir.relative_to(PROJECT_ROOT)}")
@@ -73,9 +45,11 @@ def cmd_boards_list(_: argparse.Namespace) -> int:
 
 def cmd_boards_validate(_: argparse.Namespace) -> int:
     failures = 0
-    for metadata_yml, board in iter_board_profiles():
-        board_dir = metadata_yml.parent
-        missing = [field for field in REQUIRED_BOARD_FIELDS if not board.get(field)]
+    for board_profile in iter_board_profiles():
+        metadata_yml = board_profile.metadata_path
+        board = board_profile.metadata
+        board_dir = board_profile.board_dir
+        missing = [field for field in REQUIRED_BOARD_FIELDS if not board_profile.get(field)]
         if missing:
             failures += 1
             print(f"{metadata_yml}: missing {', '.join(missing)}", file=sys.stderr)
@@ -119,6 +93,31 @@ def cmd_boards_validate(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_boards_env(args: argparse.Namespace) -> int:
+    print_shell_environment(require_board_profile(args.profile))
+    return 0
+
+
+def cmd_package(args: argparse.Namespace) -> int:
+    try:
+        package_dir = create_package(
+            PackageOptions(
+                board_profile=args.board,
+                build_profile=args.profile,
+                boot_mode=args.boot,
+                build_dir=pathlib.Path(args.build_dir).resolve() if args.build_dir else None,
+                dist_dir=pathlib.Path(args.dist_dir).resolve(),
+            )
+        )
+    except (PackageError, RuntimeError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    print("Package created:")
+    print(f"  {package_dir}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="fw.py")
     subcommands = parser.add_subparsers(dest="command", required=True)
@@ -131,6 +130,18 @@ def main() -> int:
 
     boards_validate = boards_subcommands.add_parser("validate")
     boards_validate.set_defaults(func=cmd_boards_validate)
+
+    boards_env = boards_subcommands.add_parser("env")
+    boards_env.add_argument("profile")
+    boards_env.set_defaults(func=cmd_boards_env)
+
+    package = subcommands.add_parser("package")
+    package.add_argument("--board", default="esp32_oled")
+    package.add_argument("--profile", default="debug")
+    package.add_argument("--boot", default="no-mcuboot")
+    package.add_argument("--build-dir")
+    package.add_argument("--dist-dir", default=str(PROJECT_ROOT / "dist"))
+    package.set_defaults(func=cmd_package)
 
     args = parser.parse_args()
     return args.func(args)

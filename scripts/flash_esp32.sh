@@ -27,40 +27,15 @@ die() {
     exit 1
 }
 
-read_yaml_value() {
-    local file_path="$1"
-    local key="$2"
-
-    awk -v wanted_key="${key}" '
-        BEGIN { FS = ":" }
-        $1 == wanted_key {
-            value = substr($0, index($0, ":") + 1)
-            gsub(/^[ \t]+|[ \t]+$/, "", value)
-            gsub(/^"|"$/, "", value)
-            print value
-            exit
-        }
-    ' "${file_path}"
-}
-
-find_board_metadata() {
+load_board_env() {
     local profile="$1"
-    local metadata_path
-    local metadata_profile
+    local env_output
 
-    while IFS= read -r metadata_path; do
-        metadata_profile="$(read_yaml_value "${metadata_path}" profile)"
-        if [[ -z "${metadata_profile}" ]]; then
-            metadata_profile="$(basename "$(dirname "${metadata_path}")")"
-        fi
+    if ! env_output="$("${PROJECT_ROOT}/tools/fw.py" boards env "${profile}")"; then
+        die "board metadata not found for '${profile}' under boards/<vendor>/<board>/metadata.yml"
+    fi
 
-        if [[ "${metadata_profile}" == "${profile}" ]]; then
-            printf '%s\n' "${metadata_path}"
-            return 0
-        fi
-    done < <(find "${PROJECT_ROOT}/boards" -mindepth 3 -maxdepth 3 -type f -name metadata.yml | sort)
-
-    return 1
+    eval "${env_output}"
 }
 
 PORT=""
@@ -139,32 +114,17 @@ done
     exit 1
 }
 
-BOARD_METADATA="$(find_board_metadata "${BOARD_PROFILE}")" \
-    || die "board metadata not found for '${BOARD_PROFILE}' under boards/<vendor>/<board>/metadata.yml"
-BOARD_DIR="$(dirname "${BOARD_METADATA}")"
+load_board_env "${BOARD_PROFILE}"
 
-FLASH_RUNNER="$(read_yaml_value "${BOARD_METADATA}" flash_runner)"
-BOARD_FLASH_CHIP="$(read_yaml_value "${BOARD_METADATA}" flash_chip)"
-BOARD_FLASH_OFFSET="$(read_yaml_value "${BOARD_METADATA}" flash_offset)"
-SERIAL_BAUD="$(read_yaml_value "${BOARD_METADATA}" serial_baud)"
+[[ "${BOARD_FLASH_RUNNER}" == "esp32_esptool" ]] || die "board profile ${BOARD_PROFILE} does not use esp32_esptool flashing"
 
-[[ "${FLASH_RUNNER}" == "esp32_esptool" ]] || die "board profile ${BOARD_PROFILE} does not use esp32_esptool flashing"
-
-FLASH_CHIP="${BOARD_FLASH_CHIP:-}"
-FLASH_OFFSET="${BOARD_FLASH_OFFSET:-}"
-FLASH_CONF="${BOARD_DIR}/flash.conf"
-if [[ -f "${FLASH_CONF}" ]]; then
-    # shellcheck disable=SC1090
-    source "${FLASH_CONF}"
-fi
-
-FLASH_CHIP="${FLASH_CHIP:-esp32}"
-FLASH_OFFSET="${FLASH_OFFSET:-0x1000}"
-FLASH_BAUD="${CLI_FLASH_BAUD:-${FLASH_BAUD:-460800}}"
-FLASH_MODE="${FLASH_MODE:-dio}"
-FLASH_FREQ="${FLASH_FREQ:-40m}"
-FLASH_SIZE="${FLASH_SIZE:-detect}"
-SERIAL_BAUD="${SERIAL_BAUD:-115200}"
+FLASH_CHIP="${BOARD_FLASH_CHIP:-esp32}"
+FLASH_OFFSET="${BOARD_FLASH_OFFSET:-0x1000}"
+FLASH_BAUD="${CLI_FLASH_BAUD:-${BOARD_FLASH_BAUD:-460800}}"
+FLASH_MODE="${BOARD_FLASH_MODE:-dio}"
+FLASH_FREQ="${BOARD_FLASH_FREQ:-40m}"
+FLASH_SIZE="${BOARD_FLASH_SIZE:-detect}"
+SERIAL_BAUD="${BOARD_SERIAL_BAUD:-115200}"
 
 if [[ -z "${IMAGE_FILE}" ]]; then
     IMAGE_FILE="${PROJECT_ROOT}/build/${BOARD_PROFILE}/${BUILD_PROFILE}/${BOOT_MODE}/zephyr/zephyr.bin"

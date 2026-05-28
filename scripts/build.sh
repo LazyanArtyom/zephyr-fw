@@ -32,40 +32,15 @@ die() {
     exit 1
 }
 
-read_yaml_value() {
-    local file_path="$1"
-    local key="$2"
-
-    awk -v wanted_key="${key}" '
-        BEGIN { FS = ":" }
-        $1 == wanted_key {
-            value = substr($0, index($0, ":") + 1)
-            gsub(/^[ \t]+|[ \t]+$/, "", value)
-            gsub(/^"|"$/, "", value)
-            print value
-            exit
-        }
-    ' "${file_path}"
-}
-
-find_board_metadata() {
+load_board_env() {
     local profile="$1"
-    local metadata_path
-    local metadata_profile
+    local env_output
 
-    while IFS= read -r metadata_path; do
-        metadata_profile="$(read_yaml_value "${metadata_path}" profile)"
-        if [[ -z "${metadata_profile}" ]]; then
-            metadata_profile="$(basename "$(dirname "${metadata_path}")")"
-        fi
+    if ! env_output="$("${PROJECT_ROOT}/tools/fw.py" boards env "${profile}")"; then
+        die "board profile metadata not found for '${profile}' under boards/<vendor>/<board>/metadata.yml"
+    fi
 
-        if [[ "${metadata_profile}" == "${profile}" ]]; then
-            printf '%s\n' "${metadata_path}"
-            return 0
-        fi
-    done < <(find "${PROJECT_ROOT}/boards" -mindepth 3 -maxdepth 3 -type f -name metadata.yml | sort)
-
-    return 1
+    eval "${env_output}"
 }
 
 join_by_semicolon() {
@@ -238,30 +213,15 @@ if [[ -z "${BOARD_PROFILE}" ]]; then
     exit 1
 fi
 
-BOARD_METADATA="$(find_board_metadata "${BOARD_PROFILE}")" \
-    || die "board profile metadata not found for '${BOARD_PROFILE}' under boards/<vendor>/<board>/metadata.yml"
-BOARD_DIR="$(dirname "${BOARD_METADATA}")"
-BOARD_ROOT="${PROJECT_ROOT}"
+load_board_env "${BOARD_PROFILE}"
 BOARD_ZEPHYR_YML="${BOARD_DIR}/board.yml"
 [[ -f "${BOARD_ZEPHYR_YML}" ]] || die "Zephyr board.yml not found: ${BOARD_ZEPHYR_YML}"
 
-BOARD_STATUS="$(read_yaml_value "${BOARD_METADATA}" status)"
 if [[ "${BOARD_STATUS}" != "enabled" ]]; then
     die "${BOARD_PROFILE} is not enabled yet (status: ${BOARD_STATUS:-unknown})"
 fi
 
-ZEPHYR_BOARD="$(read_yaml_value "${BOARD_METADATA}" zephyr_board)"
 [[ -n "${ZEPHYR_BOARD}" ]] || die "zephyr_board is missing in ${BOARD_METADATA}"
-
-BOARD_DISPLAY_NAME="$(read_yaml_value "${BOARD_METADATA}" display_name)"
-BOARD_SERIAL_BAUD="$(read_yaml_value "${BOARD_METADATA}" serial_baud)"
-BOARD_FLASH_RUNNER="$(read_yaml_value "${BOARD_METADATA}" flash_runner)"
-BOARD_FLASH_CHIP="$(read_yaml_value "${BOARD_METADATA}" flash_chip)"
-BOARD_FLASH_OFFSET="$(read_yaml_value "${BOARD_METADATA}" flash_offset)"
-BOARD_DESCRIPTION="$(read_yaml_value "${BOARD_METADATA}" description)"
-DEFAULT_DISPLAY="$(read_yaml_value "${BOARD_METADATA}" default_display)"
-DEFAULT_SETTINGS="$(read_yaml_value "${BOARD_METADATA}" default_settings)"
-DEFAULT_BOOT="$(read_yaml_value "${BOARD_METADATA}" default_boot)"
 BOOT_MODE="${BOOT_MODE:-${DEFAULT_BOOT:-no-mcuboot}}"
 
 case "${BUILD_PROFILE}" in
@@ -360,19 +320,14 @@ fi
 COMMON_CONF="${PROJECT_ROOT}/prj.conf"
 LOGGING_CONF="${PROJECT_ROOT}/configs/features/logging.conf"
 BOARD_CONF="${BOARD_DIR}/board.conf"
-LEGACY_BOARD_CONF="${BOARD_DIR}/app.conf"
 BOARD_PROFILE_CONF="${BOARD_DIR}/${BUILD_PROFILE}.conf"
 BOARD_OVERLAY="${BOARD_DIR}/board.overlay"
-LEGACY_BOARD_OVERLAY="${BOARD_DIR}/app.overlay"
+[[ -f "${BOARD_CONF}" ]] || die "board config not found: ${BOARD_CONF}"
 
 CONF_FILES=()
 add_conf_if_exists "${COMMON_CONF}"
 add_conf_if_exists "${LOGGING_CONF}"
-if [[ -f "${BOARD_CONF}" ]]; then
-    add_conf_if_exists "${BOARD_CONF}"
-else
-    add_conf_if_exists "${LEGACY_BOARD_CONF}"
-fi
+add_conf_if_exists "${BOARD_CONF}"
 add_conf_if_exists "${PROFILE_CONF}"
 add_conf_if_exists "${BOARD_PROFILE_CONF}"
 add_conf_if_exists "${BOOT_CONF}"
@@ -441,10 +396,6 @@ echo "Shell          : ${SHELL_MODE} (profile policy)"
 echo "Asserts        : ${ASSERTS_MODE} (profile policy)"
 echo "Build dir      : ${BUILD_DIR}"
 echo "Conf files     : ${CONF_FILE_ARG}"
-if [[ ! -f "${BOARD_OVERLAY}" && -f "${LEGACY_BOARD_OVERLAY}" ]]; then
-    BOARD_OVERLAY="${LEGACY_BOARD_OVERLAY}"
-fi
-
 if [[ -f "${BOARD_OVERLAY}" ]]; then
     echo "Overlay        : ${BOARD_OVERLAY}"
 else
