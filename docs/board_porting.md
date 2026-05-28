@@ -18,9 +18,11 @@ Kconfig.defconfig
 board.cmake
 support/openocd.cfg
 metadata.yml
-app.conf
+board.conf
+board.overlay
 debug.conf
 release.conf
+production.conf
 flash.conf
 README.md
 ```
@@ -44,6 +46,7 @@ display_name: My Board
 status: enabled
 zephyr_board: my_board
 default_display: off
+default_settings: off
 default_boot: mcuboot
 serial_baud: 115200
 flash_runner: openocd
@@ -67,14 +70,15 @@ Rules:
 Pins and buses             -> <board>_<qualifiers>.dts
 SoC/CPU board selection    -> Kconfig.<board>
 Board hardware defaults    -> <board>_<qualifiers>_defconfig
-App feature defaults       -> app.conf
-Debug/release tweaks       -> debug.conf / release.conf
+App feature defaults       -> board.conf
+App devicetree overrides   -> board.overlay
+Debug/release/production   -> debug.conf / release.conf / production.conf
 Flash/debug runners        -> board.cmake and support/openocd.cfg
 Package/flash metadata     -> metadata.yml and flash.conf
 Shared application features -> configs/features or profile fragments
 ```
 
-Keep placeholders out of the repository until they describe real hardware. Use
+Keep required board policy files present, even when the first version only documents that no board-specific override is needed. Use
 `boards/espressif/esp32_oled/` as the reference implementation when adding a
 new board.
 

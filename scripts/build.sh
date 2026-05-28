@@ -260,6 +260,7 @@ BOARD_FLASH_CHIP="$(read_yaml_value "${BOARD_METADATA}" flash_chip)"
 BOARD_FLASH_OFFSET="$(read_yaml_value "${BOARD_METADATA}" flash_offset)"
 BOARD_DESCRIPTION="$(read_yaml_value "${BOARD_METADATA}" description)"
 DEFAULT_DISPLAY="$(read_yaml_value "${BOARD_METADATA}" default_display)"
+DEFAULT_SETTINGS="$(read_yaml_value "${BOARD_METADATA}" default_settings)"
 DEFAULT_BOOT="$(read_yaml_value "${BOARD_METADATA}" default_boot)"
 BOOT_MODE="${BOOT_MODE:-${DEFAULT_BOOT:-no-mcuboot}}"
 
@@ -312,6 +313,20 @@ case "${DEFAULT_DISPLAY:-off}" in
         ;;
 esac
 
+case "${DEFAULT_SETTINGS:-off}" in
+    on)
+        SETTINGS_CONF="${PROJECT_ROOT}/configs/features/settings.conf"
+        SETTINGS_MODE="on"
+        ;;
+    off)
+        SETTINGS_CONF="${PROJECT_ROOT}/configs/features/no_settings.conf"
+        SETTINGS_MODE="off"
+        ;;
+    *)
+        die "board default_settings must be on or off, got: ${DEFAULT_SETTINGS}"
+        ;;
+esac
+
 if [[ "${BUILD_PROFILE}" == "production" ]]; then
     SHELL_MODE="off"
 else
@@ -344,18 +359,25 @@ fi
 
 COMMON_CONF="${PROJECT_ROOT}/prj.conf"
 LOGGING_CONF="${PROJECT_ROOT}/configs/features/logging.conf"
-BOARD_CONF="${BOARD_DIR}/app.conf"
+BOARD_CONF="${BOARD_DIR}/board.conf"
+LEGACY_BOARD_CONF="${BOARD_DIR}/app.conf"
 BOARD_PROFILE_CONF="${BOARD_DIR}/${BUILD_PROFILE}.conf"
-BOARD_OVERLAY="${BOARD_DIR}/app.overlay"
+BOARD_OVERLAY="${BOARD_DIR}/board.overlay"
+LEGACY_BOARD_OVERLAY="${BOARD_DIR}/app.overlay"
 
 CONF_FILES=()
 add_conf_if_exists "${COMMON_CONF}"
 add_conf_if_exists "${LOGGING_CONF}"
-add_conf_if_exists "${BOARD_CONF}"
+if [[ -f "${BOARD_CONF}" ]]; then
+    add_conf_if_exists "${BOARD_CONF}"
+else
+    add_conf_if_exists "${LEGACY_BOARD_CONF}"
+fi
 add_conf_if_exists "${PROFILE_CONF}"
 add_conf_if_exists "${BOARD_PROFILE_CONF}"
 add_conf_if_exists "${BOOT_CONF}"
 add_conf_if_exists "${DISPLAY_CONF}"
+add_conf_if_exists "${SETTINGS_CONF}"
 if [[ "${SHELL_MODE}" == "on" ]]; then
     add_conf_if_exists "${PROJECT_ROOT}/configs/features/shell.conf"
     add_conf_if_exists "${GENERATED_SHELL_PROMPT_CONF}"
@@ -414,10 +436,15 @@ elif [[ -n "${BUILD_DIR_RESET_REASON}" ]]; then
 fi
 echo "Boot mode      : ${BOOT_MODE}"
 echo "Display        : ${DISPLAY_MODE} (from metadata.yml)"
+echo "Settings       : ${SETTINGS_MODE} (from metadata.yml)"
 echo "Shell          : ${SHELL_MODE} (profile policy)"
 echo "Asserts        : ${ASSERTS_MODE} (profile policy)"
 echo "Build dir      : ${BUILD_DIR}"
 echo "Conf files     : ${CONF_FILE_ARG}"
+if [[ ! -f "${BOARD_OVERLAY}" && -f "${LEGACY_BOARD_OVERLAY}" ]]; then
+    BOARD_OVERLAY="${LEGACY_BOARD_OVERLAY}"
+fi
+
 if [[ -f "${BOARD_OVERLAY}" ]]; then
     echo "Overlay        : ${BOARD_OVERLAY}"
 else

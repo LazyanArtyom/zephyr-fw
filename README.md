@@ -76,9 +76,11 @@ zephyr-fw/
 │           ├── board.cmake
 │           ├── support/
 │           ├── metadata.yml
-│           ├── app.conf
+│           ├── board.conf
+│           ├── board.overlay
 │           ├── debug.conf
 │           ├── release.conf
+│           ├── production.conf
 │           └── flash.conf
 ├── configs/
 │   ├── boot/
@@ -226,6 +228,15 @@ app version
 board
 system uptime
 system reboot
+settings list [subtree]
+settings get <key>
+settings set <key> <value>
+settings reset <key>
+settings save
+settings load
+i2cdetect -r -y 0
+i2cdetect -y i2c0
+i2cdetect -a -r -y 0
 ```
 
 ## More Docs

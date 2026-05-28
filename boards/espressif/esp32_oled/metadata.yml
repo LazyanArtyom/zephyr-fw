@@ -3,6 +3,7 @@ display_name: ESP32 OLED development board
 status: enabled
 zephyr_board: esp32_oled/esp32/procpu
 default_display: on
+default_settings: on
 default_boot: no-mcuboot
 serial_baud: 115200
 flash_runner: esp32_esptool

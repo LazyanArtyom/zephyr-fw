@@ -1,0 +1,7 @@
+/*
+ * Board-local application overlay.
+ *
+ * The base ESP32 OLED hardware description already enables the validated
+ * UART, I2C, display, storage partition, and boot button. Keep product- or
+ * revision-specific changes here instead of placing pins in C++ code.
+ */

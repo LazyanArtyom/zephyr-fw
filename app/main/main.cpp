@@ -1,14 +1,29 @@
 #include <platform/board/board_info.h>
 #include <services/health/heartbeat_service.h>
+#include <zephyr/logging/log.h>
 
 #if defined(CONFIG_FW_DISPLAY)
 #include <services/display/display_service.h>
 #endif
 
+#if defined(CONFIG_SETTINGS)
+#include <platform/settings/settings_store.h>
+#endif
+
+LOG_MODULE_REGISTER(app_main, CONFIG_LOG_DEFAULT_LEVEL);
+
 int main() {
     const platform::BoardInfo& board_info = platform::BoardInfo::Current();
 
     board_info.LogBootSummary();
+
+#if defined(CONFIG_SETTINGS)
+    const platform::Status settings_status = platform::SettingsStore::Load();
+    if (!settings_status.ok()) {
+        LOG_ERR("Settings load failed: %s (%s)", platform::ToString(settings_status.code()).c_str(),
+                settings_status.message().c_str());
+    }
+#endif
 
 #if defined(CONFIG_FW_DISPLAY)
     if (services::display::InitializeDisplay()) {

@@ -14,6 +14,7 @@ REQUIRED_BOARD_FIELDS = (
     "display_name",
     "status",
     "default_display",
+    "default_settings",
     "default_boot",
     "serial_baud",
 )
@@ -53,6 +54,7 @@ def cmd_boards_list(_: argparse.Namespace) -> int:
         print(f"    Board dir     : {board_dir.relative_to(PROJECT_ROOT)}")
         print(f"    Status        : {board.get('status', 'unknown')}")
         print(f"    Display       : {board.get('default_display', 'off')}")
+        print(f"    Settings      : {board.get('default_settings', 'off')}")
         print(f"    Default boot  : {board.get('default_boot', 'no-mcuboot')}")
         print()
 
@@ -80,6 +82,16 @@ def cmd_boards_validate(_: argparse.Namespace) -> int:
         if not (board_dir / "board.yml").is_file():
             failures += 1
             print(f"{board_dir}: missing Zephyr board.yml", file=sys.stderr)
+        if not (board_dir / "board.conf").is_file():
+            failures += 1
+            print(f"{board_dir}: missing board.conf", file=sys.stderr)
+        if not (board_dir / "board.overlay").is_file():
+            failures += 1
+            print(f"{board_dir}: missing board.overlay", file=sys.stderr)
+        for profile_conf in ("debug.conf", "release.conf", "production.conf", "flash.conf", "README.md"):
+            if not (board_dir / profile_conf).is_file():
+                failures += 1
+                print(f"{board_dir}: missing {profile_conf}", file=sys.stderr)
         if not any(board_dir.glob("*.dts")):
             failures += 1
             print(f"{board_dir}: missing Zephyr devicetree (*.dts)", file=sys.stderr)
@@ -92,6 +104,9 @@ def cmd_boards_validate(_: argparse.Namespace) -> int:
         if board["default_display"] not in ("on", "off"):
             failures += 1
             print(f"{metadata_yml}: default_display must be on or off", file=sys.stderr)
+        if board["default_settings"] not in ("on", "off"):
+            failures += 1
+            print(f"{metadata_yml}: default_settings must be on or off", file=sys.stderr)
         if board["default_boot"] not in ("no-mcuboot", "mcuboot"):
             failures += 1
             print(f"{metadata_yml}: default_boot must be no-mcuboot or mcuboot", file=sys.stderr)

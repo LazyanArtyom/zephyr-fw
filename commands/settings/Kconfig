@@ -10,3 +10,5 @@ config FW_CMD_SETTINGS
         settings get <key>
         settings set <key> <value>
         settings reset <key>
+        settings save
+        settings load
