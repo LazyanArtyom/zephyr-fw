@@ -23,6 +23,7 @@ board.overlay
 debug.conf
 release.conf
 production.conf
+production.yml
 flash.conf
 README.md
 ```
@@ -75,6 +76,7 @@ App devicetree overrides   -> board.overlay
 Debug/release/production   -> debug.conf / release.conf / production.conf
 Flash/debug runners        -> board.cmake and support/openocd.cfg
 Package/flash metadata     -> metadata.yml and flash.conf
+Signing/rollback/recovery  -> production.yml
 Shared application features -> configs/features or profile fragments
 ```
 

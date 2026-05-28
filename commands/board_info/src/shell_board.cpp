@@ -1,7 +1,9 @@
+#include <errno.h>
 #include <platform/board/board_info.h>
 #include <platform/core/clock.h>
 #include <platform/core/reset_info.h>
 #include <platform/shell/console.h>
+#include <services/health/health_service.h>
 #include <zephyr/shell/shell.h>
 
 namespace {
@@ -60,6 +62,96 @@ void PrintBoardInfo(const platform::shell::Console& output) {
     output.field("Storage partition status", board_info.storage_partition_status());
 }
 
+
+int ToErrno(const platform::Status& status) {
+    switch (status.code()) {
+        case platform::StatusCode::kOk:
+            return 0;
+        case platform::StatusCode::kInvalidArgument:
+            return -EINVAL;
+        case platform::StatusCode::kNotFound:
+            return -ENOENT;
+        case platform::StatusCode::kPermissionDenied:
+            return -EACCES;
+        case platform::StatusCode::kBusy:
+            return -EBUSY;
+        case platform::StatusCode::kNotSupported:
+            return -ENOTSUP;
+        case platform::StatusCode::kUnavailable:
+            return -ENODEV;
+        default:
+            return -EIO;
+    }
+}
+
+int PrintStatusError(const platform::shell::Console& output, platform::StringView action,
+                     const platform::Status& status) {
+    output.error_subject(action, platform::ToString(status.code()), status.message());
+    return ToErrno(status);
+}
+
+void PrintManufacturingValue(const platform::shell::Console& output,
+                             const services::health::ManufacturingValue& value) {
+    output.field(value.key, value.value.view());
+}
+
+int CmdBoardSerial(const shell* shell, size_t argc, char** argv) {
+    const platform::shell::Console output(shell);
+    const platform::shell::Arguments arguments(argc, argv);
+
+    if (arguments.size() < 3) {
+        output.line("Usage: board serial get|set <value>");
+        return -EINVAL;
+    }
+
+    const platform::StringView action = arguments.at(2);
+    if (action.equals("get")) {
+        PrintManufacturingValue(output, services::health::ManufacturingService::BoardSerial());
+        return 0;
+    }
+    if (action.equals("set") && arguments.size() == 4) {
+        const platform::Status status =
+            services::health::ManufacturingService::SetBoardSerial(arguments.at(3));
+        if (!status.ok()) {
+            return PrintStatusError(output, "board serial set failed", status);
+        }
+        output.field("board/serial", arguments.at(3));
+        return 0;
+    }
+
+    output.error_value("unknown board serial action", action);
+    return -EINVAL;
+}
+
+int CmdBoardHardwareRevision(const shell* shell, size_t argc, char** argv) {
+    const platform::shell::Console output(shell);
+    const platform::shell::Arguments arguments(argc, argv);
+
+    if (arguments.size() < 3) {
+        output.line("Usage: board hw-rev get|set <value>");
+        return -EINVAL;
+    }
+
+    const platform::StringView action = arguments.at(2);
+    if (action.equals("get")) {
+        PrintManufacturingValue(output,
+                                services::health::ManufacturingService::BoardHardwareRevision());
+        return 0;
+    }
+    if (action.equals("set") && arguments.size() == 4) {
+        const platform::Status status =
+            services::health::ManufacturingService::SetBoardHardwareRevision(arguments.at(3));
+        if (!status.ok()) {
+            return PrintStatusError(output, "board hw-rev set failed", status);
+        }
+        output.field("board/hw-rev", arguments.at(3));
+        return 0;
+    }
+
+    output.error_value("unknown board hw-rev action", action);
+    return -EINVAL;
+}
+
 int CmdBoardInfo(const shell* shell, size_t argc, char** argv) {
     (void)argc;
     (void)argv;
@@ -90,6 +182,8 @@ int CmdBoardCaps(const shell* shell, size_t argc, char** argv) {
 SHELL_STATIC_SUBCMD_SET_CREATE(board_subcommands,
                                SHELL_CMD(info, NULL, "Show board information.", CmdBoardInfo),
                                SHELL_CMD(caps, NULL, "Show board capabilities.", CmdBoardCaps),
+                               SHELL_CMD_ARG(serial, NULL, "Get or set board serial.", CmdBoardSerial, 3, 1),
+                               SHELL_CMD_ARG(hw-rev, NULL, "Get or set board hardware revision.", CmdBoardHardwareRevision, 3, 1),
                                SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(board_info, NULL, "Show board information.", CmdBoardInfo);

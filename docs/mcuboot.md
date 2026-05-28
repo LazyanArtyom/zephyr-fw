@@ -32,3 +32,20 @@ Recovery process
 ```
 
 Private signing keys must not be committed.
+
+## ESP32 OLED Policy
+
+The ESP32 OLED board defines its production policy in:
+
+```text
+boards/espressif/esp32_oled/production.yml
+partitions/esp32_oled.md
+```
+
+The current policy uses the Espressif `partitions_0x1000_amp_4M` layout:
+slot0 and slot1 are both 1344K, settings use the 192K `storage_partition`, and
+MCUboot scratch uses the 124K `image-scratch` partition. Factory reset is
+settings-only and preserves bootloader slots, firmware images, board serial, and
+hardware revision. Private
+production signing keys stay outside git and are supplied by the CI signing
+environment.

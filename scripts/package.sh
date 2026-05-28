@@ -68,6 +68,23 @@ read_yaml_value() {
     ' "${file_path}"
 }
 
+read_optional_yaml_value() {
+    local file_path="$1"
+    local key="$2"
+    local default_value="$3"
+
+    if [[ -f "${file_path}" ]]; then
+        local value
+        value="$(read_yaml_value "${file_path}" "${key}")"
+        if [[ -n "${value}" ]]; then
+            printf '%s\n' "${value}"
+            return
+        fi
+    fi
+
+    printf '%s\n' "${default_value}"
+}
+
 find_board_metadata() {
     local profile="$1"
     local metadata_path
@@ -146,6 +163,8 @@ fi
 
 BOARD_METADATA="$(find_board_metadata "${BOARD_PROFILE}")" \
     || die "board metadata not found for '${BOARD_PROFILE}' under boards/<vendor>/<board>/metadata.yml"
+BOARD_DIR="$(dirname "${BOARD_METADATA}")"
+PRODUCTION_POLICY_FILE="${BOARD_DIR}/production.yml"
 [[ -d "${BUILD_DIR}" ]] || die "build directory not found: ${BUILD_DIR}"
 
 VERSION_MAJOR="$(read_version_var VERSION_MAJOR 0)"
@@ -180,6 +199,35 @@ copy_if_exists() {
     fi
 }
 
+generate_partition_summary() {
+    local output_path="$1"
+    local source_dts="${ZEPHYR_DIR}/zephyr.dts"
+
+    {
+        echo "Partition summary"
+        echo
+        echo "Board profile: ${BOARD_PROFILE}"
+        echo "Boot mode: ${BOOT_MODE}"
+        echo "Production policy: ${PRODUCTION_POLICY_FILE}"
+        echo
+        if [[ -f "${source_dts}" ]]; then
+            awk '
+                /partition@[0-9a-fA-F]+[ 	]*{/ { in_partition = 1; node = $1; label = ""; reg = "" }
+                in_partition && /label =/ { label = $0; gsub(/^[ 	]+label = "|";$/, "", label) }
+                in_partition && /reg =/ { reg = $0; gsub(/^[ 	]+reg = <|>;$/, "", reg) }
+                in_partition && /};/ {
+                    if (node != "") {
+                        printf "- %s label=%s reg=<%s>\n", node, label, reg
+                    }
+                    in_partition = 0
+                }
+            ' "${source_dts}"
+        else
+            echo "zephyr.dts was not present in the build output."
+        fi
+    } > "${output_path}"
+}
+
 copy_if_exists "${ZEPHYR_DIR}/zephyr.bin"
 copy_if_exists "${ZEPHYR_DIR}/zephyr.elf"
 copy_if_exists "${ZEPHYR_DIR}/zephyr.map"
@@ -190,6 +238,9 @@ copy_if_exists "${ZEPHYR_DIR}/zephyr.dts"
 copy_if_exists "${ZEPHYR_DIR}/.config" "zephyr.config"
 copy_if_exists "${BUILD_DIR}/build_info.yml"
 copy_if_exists "${BUILD_DIR}/compile_commands.json"
+copy_if_exists "${PRODUCTION_POLICY_FILE}" "production.yml"
+copy_if_exists "${PROJECT_ROOT}/partitions/${BOARD_PROFILE}.md" "partition_policy.md"
+generate_partition_summary "${PACKAGE_DIR}/partition_summary.txt"
 
 if [[ -f "${BUILD_DIR}/domains.yaml" ]]; then
     copy_if_exists "${BUILD_DIR}/domains.yaml"
@@ -212,6 +263,15 @@ ZEPHYR_BOARD="$(read_yaml_value "${BOARD_METADATA}" zephyr_board)"
 FLASH_RUNNER="$(read_yaml_value "${BOARD_METADATA}" flash_runner)"
 FLASH_CHIP="$(read_yaml_value "${BOARD_METADATA}" flash_chip)"
 FLASH_OFFSET="$(read_yaml_value "${BOARD_METADATA}" flash_offset)"
+MCUBOOT_PARTITION_LAYOUT="$(read_optional_yaml_value "${PRODUCTION_POLICY_FILE}" mcuboot_partition_layout "unknown")"
+SLOT0_SIZE="$(read_optional_yaml_value "${PRODUCTION_POLICY_FILE}" slot0_size "unknown")"
+SLOT1_SIZE="$(read_optional_yaml_value "${PRODUCTION_POLICY_FILE}" slot1_size "unknown")"
+SCRATCH_POLICY="$(read_optional_yaml_value "${PRODUCTION_POLICY_FILE}" scratch_policy "unknown")"
+SETTINGS_PARTITION="$(read_optional_yaml_value "${PRODUCTION_POLICY_FILE}" settings_partition "unknown")"
+FACTORY_RESET_BEHAVIOR="$(read_optional_yaml_value "${PRODUCTION_POLICY_FILE}" factory_reset_behavior "settings-only")"
+SIGNING_KEY_POLICY="$(read_optional_yaml_value "${PRODUCTION_POLICY_FILE}" signing_key_policy "external")"
+ROLLBACK_POLICY="$(read_optional_yaml_value "${PRODUCTION_POLICY_FILE}" rollback_policy "manual-confirm")"
+RECOVERY_PROCESS="$(read_optional_yaml_value "${PRODUCTION_POLICY_FILE}" recovery_process "board-specific")"
 
 cat > "${PACKAGE_DIR}/firmware.meta.json" <<EOF
 {
@@ -231,9 +291,31 @@ cat > "${PACKAGE_DIR}/firmware.meta.json" <<EOF
     "runner": "$(json_escape "${FLASH_RUNNER}")",
     "chip": "$(json_escape "${FLASH_CHIP}")",
     "offset": "$(json_escape "${FLASH_OFFSET}")"
+  },
+  "production": {
+    "mcuboot_partition_layout": "$(json_escape "${MCUBOOT_PARTITION_LAYOUT}")",
+    "slot0_size": "$(json_escape "${SLOT0_SIZE}")",
+    "slot1_size": "$(json_escape "${SLOT1_SIZE}")",
+    "scratch_policy": "$(json_escape "${SCRATCH_POLICY}")",
+    "settings_partition": "$(json_escape "${SETTINGS_PARTITION}")",
+    "factory_reset_behavior": "$(json_escape "${FACTORY_RESET_BEHAVIOR}")",
+    "signing_key_policy": "$(json_escape "${SIGNING_KEY_POLICY}")",
+    "rollback_policy": "$(json_escape "${ROLLBACK_POLICY}")",
+    "recovery_process": "$(json_escape "${RECOVERY_PROCESS}")"
+  },
+  "artifacts": {
+    "firmware_image": "zephyr.bin",
+    "signed_image": "zephyr.signed.bin when present",
+    "manifest": "firmware.meta.json",
+    "sha256": "firmware.sha256",
+    "zephyr_config": "zephyr.config",
+    "devicetree": "zephyr.dts",
+    "flash_helper": "flash.sh",
+    "partition_summary": "partition_summary.txt"
   }
 }
 EOF
+cp -f "${PACKAGE_DIR}/firmware.meta.json" "${PACKAGE_DIR}/manifest.json"
 
 cat > "${PACKAGE_DIR}/README.txt" <<EOF
 ${APP_DISPLAY_NAME} firmware package
@@ -250,7 +332,10 @@ Primary image:
 
 Metadata:
   firmware.meta.json
+  manifest.json
   firmware.sha256
+  partition_summary.txt
+  production.yml
 
 For ESP32 development flashing with esptool:
   ./flash.sh /dev/ttyUSB0
@@ -278,6 +363,11 @@ if [[ -z "\${PYTHON}" ]]; then
     fi
 fi
 
+IMAGE="\${SCRIPT_DIR}/zephyr.bin"
+if [[ -f "\${SCRIPT_DIR}/zephyr.signed.bin" ]]; then
+    IMAGE="\${SCRIPT_DIR}/zephyr.signed.bin"
+fi
+
 "\${PYTHON}" -m esptool \\
     --chip "${FLASH_CHIP:-esp32}" \\
     --port "\${PORT}" \\
@@ -286,7 +376,7 @@ fi
     --flash-mode dio \\
     --flash-freq 40m \\
     --flash-size detect \\
-    "${FLASH_OFFSET:-0x1000}" "\${SCRIPT_DIR}/zephyr.bin"
+    "${FLASH_OFFSET:-0x1000}" "\${IMAGE}"
 EOF
 else
     cat > "${PACKAGE_DIR}/flash.sh" <<EOF

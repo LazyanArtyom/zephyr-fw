@@ -1,0 +1,6 @@
+config FW_CMD_HEALTH
+    bool "Enable health and manufacturing commands"
+    depends on FW_SHELL
+    help
+      Enables project-owned shell commands for health, storage, factory reset,
+      watchdog, and manufacturing identifiers.

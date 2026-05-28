@@ -1,0 +1,14 @@
+# ESP32 OLED production storage and boot policy.
+mcuboot_partition_layout: espressif_partitions_0x1000_amp_4m
+slot0_partition: slot0_partition
+slot0_offset: 0x20000
+slot0_size: 1344K
+slot1_partition: slot1_partition
+slot1_offset: 0x170000
+slot1_size: 1344K
+scratch_policy: image-scratch partition, 124K, retained for swap-based rollback
+settings_partition: storage_partition, 0x3b0000, 192K, NVS settings with data CRC
+factory_reset_behavior: settings-only reset, preserves bootloader slots, firmware images, board serial, and hardware revision
+signing_key_policy: development keys local only, production private keys supplied by CI secret store
+rollback_policy: MCUboot swap/rollback policy, confirm new image before marking permanent
+recovery_process: serial ROM bootloader recovery with esptool erase-flash and package flash helper

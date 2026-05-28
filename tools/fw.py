@@ -56,6 +56,7 @@ def cmd_boards_list(_: argparse.Namespace) -> int:
         print(f"    Display       : {board.get('default_display', 'off')}")
         print(f"    Settings      : {board.get('default_settings', 'off')}")
         print(f"    Default boot  : {board.get('default_boot', 'no-mcuboot')}")
+        print(f"    Production    : {'production.yml' if (board_dir / 'production.yml').is_file() else 'missing'}")
         print()
 
     if not found:
@@ -88,7 +89,7 @@ def cmd_boards_validate(_: argparse.Namespace) -> int:
         if not (board_dir / "board.overlay").is_file():
             failures += 1
             print(f"{board_dir}: missing board.overlay", file=sys.stderr)
-        for profile_conf in ("debug.conf", "release.conf", "production.conf", "flash.conf", "README.md"):
+        for profile_conf in ("debug.conf", "release.conf", "production.conf", "flash.conf", "production.yml", "README.md"):
             if not (board_dir / profile_conf).is_file():
                 failures += 1
                 print(f"{board_dir}: missing {profile_conf}", file=sys.stderr)

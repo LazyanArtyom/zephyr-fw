@@ -4,6 +4,7 @@ menu "Custom Firmware Shell Commands"
 rsource "fw/Kconfig"
 rsource "board_info/Kconfig"
 rsource "system/Kconfig"
+rsource "health/Kconfig"
 rsource "settings/Kconfig"
 rsource "i2cdetect/Kconfig"
 

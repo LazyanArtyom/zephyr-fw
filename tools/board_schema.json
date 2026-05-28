@@ -8,6 +8,7 @@
     "status",
     "zephyr_board",
     "default_display",
+    "default_settings",
     "default_boot",
     "serial_baud"
   ],
@@ -22,7 +23,8 @@
     "flash_runner": { "type": "string" },
     "flash_chip": { "type": "string" },
     "flash_offset": { "type": "string" },
-    "description": { "type": "string" }
+    "description": { "type": "string" },
+    "default_settings": { "enum": ["on", "off"] }
   },
   "additionalProperties": true
 }

@@ -81,6 +81,7 @@ zephyr-fw/
 │           ├── debug.conf
 │           ├── release.conf
 │           ├── production.conf
+│           ├── production.yml
 │           └── flash.conf
 ├── configs/
 │   ├── boot/
@@ -169,7 +170,12 @@ dist/zephyr-fw_0.1.0_esp32_oled_debug_no-mcuboot/
 ├── zephyr.elf
 ├── zephyr.map
 ├── firmware.meta.json
+├── manifest.json
 ├── firmware.sha256
+├── zephyr.config
+├── zephyr.dts
+├── partition_summary.txt
+├── production.yml
 ├── flash.sh
 └── README.txt
 ```
@@ -234,6 +240,14 @@ settings set <key> <value>
 settings reset <key>
 settings save
 settings load
+health status
+health storage info
+health factory reset
+health watchdog status
+board serial get
+board serial set <value>
+board hw-rev get
+board hw-rev set <value>
 i2cdetect -r -y 0
 i2cdetect -y i2c0
 i2cdetect -a -r -y 0
