@@ -6,11 +6,17 @@ import datetime as dt
 import hashlib
 import json
 import pathlib
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
 
 from board_metadata import PROJECT_ROOT, read_flat_yaml, require_valid_board_profile, resolved_flash_settings
+
+
+PACKAGE_COMPONENT_RE = re.compile(r"^[A-Za-z0-9._+-]+$")
+VALID_BUILD_PROFILES = ("debug", "release", "production")
+VALID_BOOT_MODES = ("no-mcuboot", "mcuboot")
 
 
 @dataclass(frozen=True)
@@ -55,6 +61,39 @@ def read_version(version_file: pathlib.Path) -> str:
     if extra:
         version = f"{version}-{extra}"
     return version
+
+
+def require_package_component(name: str, value: str) -> str:
+    if not value:
+        raise PackageError(f"{name} is required")
+    if not PACKAGE_COMPONENT_RE.fullmatch(value):
+        raise PackageError(
+            f"{name} contains characters that are not safe for package paths: {value}"
+        )
+    return value
+
+
+def require_choice(name: str, value: str, choices: tuple[str, ...]) -> str:
+    if value not in choices:
+        raise PackageError(f"unknown {name}: {value} (valid: {', '.join(choices)})")
+    return value
+
+
+def package_name_from_components(
+    slug: str, version: str, board_profile: str, build_profile: str, boot_mode: str
+) -> str:
+    build_profile = require_choice("build profile", build_profile, VALID_BUILD_PROFILES)
+    boot_mode = require_choice("boot mode", boot_mode, VALID_BOOT_MODES)
+
+    return "_".join(
+        (
+            require_package_component("APP_SLUG", slug),
+            require_package_component("version", version),
+            require_package_component("board profile", board_profile),
+            require_package_component("build profile", build_profile),
+            require_package_component("boot mode", boot_mode),
+        )
+    )
 
 
 def copy_if_exists(source: pathlib.Path, package_dir: pathlib.Path, dest_name: str | None = None) -> None:
@@ -178,6 +217,14 @@ def create_package(options: PackageOptions) -> pathlib.Path:
     app_version = read_version(PROJECT_ROOT / app_version_file)
     app_slug = project_env.get("APP_SLUG", "firmware")
 
+    package_name = package_name_from_components(
+        app_slug,
+        app_version,
+        options.board_profile,
+        options.build_profile,
+        options.boot_mode,
+    )
+
     board = require_valid_board_profile(options.board_profile)
     production_policy_file = board.production_policy_path
     production_policy = read_flat_yaml(production_policy_file) if production_policy_file.is_file() else {}
@@ -191,8 +238,8 @@ def create_package(options: PackageOptions) -> pathlib.Path:
     if not firmware_image.is_file():
         raise PackageError(f"firmware image not found: {firmware_image}")
 
-    package_name = f"{app_slug}_{app_version}_{options.board_profile}_{options.build_profile}_{options.boot_mode}"
-    package_dir = options.dist_dir / package_name
+    dist_dir = options.dist_dir.resolve()
+    package_dir = dist_dir / package_name
     if package_dir.exists():
         shutil.rmtree(package_dir)
     package_dir.mkdir(parents=True)

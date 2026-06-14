@@ -6,6 +6,10 @@ Create packages with:
 ./scripts/package.sh --board esp32_oled --profile debug --boot no-mcuboot
 ```
 
+`scripts/package.sh` is only a compatibility wrapper. Package assembly,
+manifest generation, checksums, partition summaries, and production policy
+parsing live in `tools/firmware_package.py` behind `tools/fw.py package`.
+
 Package naming:
 
 ```text
