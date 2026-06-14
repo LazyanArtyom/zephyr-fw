@@ -11,12 +11,29 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 
-from board_metadata import PROJECT_ROOT, read_flat_yaml, require_valid_board_profile, resolved_flash_settings
+from board_metadata import (
+    PROJECT_ROOT,
+    PRODUCTION_PARTITIONS,
+    parse_offset,
+    parse_size_bytes,
+    read_flat_yaml,
+    require_valid_board_profile,
+    resolved_flash_settings,
+)
 
 
 PACKAGE_COMPONENT_RE = re.compile(r"^[A-Za-z0-9._+-]+$")
 VALID_BUILD_PROFILES = ("debug", "release", "production")
 VALID_BOOT_MODES = ("no-mcuboot", "mcuboot")
+
+
+@dataclass(frozen=True)
+class DtsPartition:
+    node: str
+    node_label: str
+    label: str
+    offset: int
+    size: int
 
 
 @dataclass(frozen=True)
@@ -124,7 +141,103 @@ def git_dirty() -> bool:
     return bool(git_value(["status", "--porcelain"], ""))
 
 
-def partition_summary(source_dts: pathlib.Path, board_profile: str, boot_mode: str, production_policy_file: pathlib.Path) -> str:
+def parse_dts_reg(value: str) -> tuple[int, int] | None:
+    parts = value.strip().strip("<>;").split()
+    if len(parts) < 2:
+        return None
+
+    try:
+        return int(parts[0], 0), int(parts[1], 0)
+    except ValueError:
+        return None
+
+
+def parse_dts_partitions(source_dts: pathlib.Path) -> list[DtsPartition]:
+    if not source_dts.is_file():
+        return []
+
+    partitions: list[DtsPartition] = []
+    in_partition = False
+    node = ""
+    node_label = ""
+    label = ""
+    reg: tuple[int, int] | None = None
+
+    for raw_line in source_dts.read_text(encoding="utf-8", errors="replace").splitlines():
+        stripped = raw_line.strip()
+        match = re.match(
+            r"(?:(?P<label>[A-Za-z_][A-Za-z0-9_-]*)\s*:\s*)?(?P<node>partition@[0-9A-Fa-f]+)\s*\{",
+            stripped,
+        )
+        if match:
+            in_partition = True
+            node = match.group("node")
+            node_label = match.group("label") or ""
+            label = ""
+            reg = None
+            continue
+
+        if not in_partition:
+            continue
+
+        if stripped.startswith("label ="):
+            label = stripped.removeprefix("label =").strip().strip('";')
+        elif stripped.startswith("reg ="):
+            reg = parse_dts_reg(stripped.removeprefix("reg ="))
+        elif stripped == "};":
+            if reg is not None:
+                partitions.append(DtsPartition(node, node_label, label, reg[0], reg[1]))
+            in_partition = False
+
+    return partitions
+
+
+def validate_production_policy_against_dts(
+    policy: dict[str, str], source_dts: pathlib.Path
+) -> list[str]:
+    if not source_dts.is_file():
+        return [f"build devicetree not found: {source_dts}"]
+
+    partitions = parse_dts_partitions(source_dts)
+    by_name: dict[str, DtsPartition] = {}
+    for partition in partitions:
+        for name in (partition.node_label, partition.label):
+            if name:
+                by_name[name] = partition
+
+    issues: list[str] = []
+    for partition_name in PRODUCTION_PARTITIONS:
+        policy_partition = policy.get(f"{partition_name}_partition", "")
+        expected_offset = parse_offset(policy.get(f"{partition_name}_offset", ""))
+        expected_size = parse_size_bytes(policy.get(f"{partition_name}_size", ""))
+        dts_partition = by_name.get(policy_partition)
+
+        if dts_partition is None:
+            issues.append(
+                f"{source_dts}: production policy partition not found: {policy_partition}"
+            )
+            continue
+
+        if expected_offset is not None and dts_partition.offset != expected_offset:
+            issues.append(
+                f"{source_dts}: {policy_partition} offset is 0x{dts_partition.offset:x}, "
+                f"production.yml expects 0x{expected_offset:x}"
+            )
+        if expected_size is not None and dts_partition.size != expected_size:
+            issues.append(
+                f"{source_dts}: {policy_partition} size is {dts_partition.size} bytes, "
+                f"production.yml expects {expected_size} bytes"
+            )
+
+    return issues
+
+
+def partition_summary(
+    source_dts: pathlib.Path,
+    board_profile: str,
+    boot_mode: str,
+    production_policy_file: pathlib.Path,
+) -> str:
     lines = [
         "Partition summary",
         "",
@@ -138,27 +251,22 @@ def partition_summary(source_dts: pathlib.Path, board_profile: str, boot_mode: s
         lines.append("zephyr.dts was not present in the build output.")
         return "\n".join(lines) + "\n"
 
-    in_partition = False
-    node = ""
-    label = ""
-    reg = ""
-    for raw_line in source_dts.read_text(encoding="utf-8", errors="replace").splitlines():
-        stripped = raw_line.strip()
-        if stripped.startswith("partition@") and stripped.endswith("{"):
-            in_partition = True
-            node = stripped[:-1].strip()
-            label = ""
-            reg = ""
-            continue
-        if not in_partition:
-            continue
-        if stripped.startswith("label ="):
-            label = stripped.removeprefix("label =").strip().strip('";')
-        elif stripped.startswith("reg ="):
-            reg = stripped.removeprefix("reg =").strip().strip("<>;")
-        elif stripped == "};":
-            lines.append(f"- {node} label={label} reg=<{reg}>")
-            in_partition = False
+    partitions = parse_dts_partitions(source_dts)
+    if not partitions:
+        lines.append("No flash partitions were found in zephyr.dts.")
+        return "\n".join(lines) + "\n"
+
+    for partition in partitions:
+        names = []
+        if partition.node_label:
+            names.append(f"node_label={partition.node_label}")
+        if partition.label:
+            names.append(f"label={partition.label}")
+        names_text = " ".join(names) if names else "unnamed"
+        lines.append(
+            f"- {partition.node} {names_text} "
+            f"reg=<0x{partition.offset:x} 0x{partition.size:x}>"
+        )
 
     return "\n".join(lines) + "\n"
 
@@ -227,7 +335,7 @@ def create_package(options: PackageOptions) -> pathlib.Path:
 
     board = require_valid_board_profile(options.board_profile)
     production_policy_file = board.production_policy_path
-    production_policy = read_flat_yaml(production_policy_file) if production_policy_file.is_file() else {}
+    production_policy = read_flat_yaml(production_policy_file)
     flash = resolved_flash_settings(board)
 
     build_dir = options.build_dir or PROJECT_ROOT / "build" / options.board_profile / options.build_profile / options.boot_mode
@@ -237,6 +345,15 @@ def create_package(options: PackageOptions) -> pathlib.Path:
         raise PackageError(f"build directory not found: {build_dir}")
     if not firmware_image.is_file():
         raise PackageError(f"firmware image not found: {firmware_image}")
+
+    production_dts_issues = validate_production_policy_against_dts(
+        production_policy, zephyr_dir / "zephyr.dts"
+    )
+    if production_dts_issues:
+        raise PackageError(
+            "production policy does not match build devicetree:\n"
+            + "\n".join(production_dts_issues)
+        )
 
     dist_dir = options.dist_dir.resolve()
     package_dir = dist_dir / package_name
@@ -287,15 +404,25 @@ def create_package(options: PackageOptions) -> pathlib.Path:
             "size": flash["size"],
         },
         "production": {
-            "mcuboot_partition_layout": production_policy.get("mcuboot_partition_layout", "unknown"),
-            "slot0_size": production_policy.get("slot0_size", "unknown"),
-            "slot1_size": production_policy.get("slot1_size", "unknown"),
-            "scratch_policy": production_policy.get("scratch_policy", "unknown"),
-            "settings_partition": production_policy.get("settings_partition", "unknown"),
-            "factory_reset_behavior": production_policy.get("factory_reset_behavior", "settings-only"),
-            "signing_key_policy": production_policy.get("signing_key_policy", "external"),
-            "rollback_policy": production_policy.get("rollback_policy", "manual-confirm"),
-            "recovery_process": production_policy.get("recovery_process", "board-specific"),
+            "mcuboot_partition_layout": production_policy["mcuboot_partition_layout"],
+            "slot0_partition": production_policy["slot0_partition"],
+            "slot0_offset": production_policy["slot0_offset"],
+            "slot0_size": production_policy["slot0_size"],
+            "slot1_partition": production_policy["slot1_partition"],
+            "slot1_offset": production_policy["slot1_offset"],
+            "slot1_size": production_policy["slot1_size"],
+            "scratch_partition": production_policy["scratch_partition"],
+            "scratch_offset": production_policy["scratch_offset"],
+            "scratch_size": production_policy["scratch_size"],
+            "scratch_policy": production_policy["scratch_policy"],
+            "settings_partition": production_policy["settings_partition"],
+            "settings_offset": production_policy["settings_offset"],
+            "settings_size": production_policy["settings_size"],
+            "settings_backend": production_policy["settings_backend"],
+            "factory_reset_behavior": production_policy["factory_reset_behavior"],
+            "signing_key_policy": production_policy["signing_key_policy"],
+            "rollback_policy": production_policy["rollback_policy"],
+            "recovery_process": production_policy["recovery_process"],
         },
         "artifacts": {
             "firmware_image": "zephyr.bin",

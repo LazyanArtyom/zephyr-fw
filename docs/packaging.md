@@ -8,7 +8,9 @@ Create packages with:
 
 `scripts/package.sh` is only a compatibility wrapper. Package assembly,
 manifest generation, checksums, partition summaries, and production policy
-parsing live in `tools/firmware_package.py` behind `tools/fw.py package`.
+parsing live in `tools/firmware_package.py` behind `tools/fw.py package`. The
+packager rejects builds whose generated `zephyr.dts` partition names, offsets,
+or sizes disagree with the board `production.yml`.
 
 Package naming:
 

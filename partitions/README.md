@@ -12,6 +12,7 @@ document the flash map in the package manifest.
 ## Board Policies
 
 Board-specific production policies live beside each board as `production.yml`
-and are summarized under this directory for release review. Each policy must
-cover slot0/slot1 sizing, scratch behavior, settings partition, factory reset
-behavior, signing key policy, rollback policy, and recovery process.
+and are summarized under this directory for release review. Each policy is
+schema-validated by `tools/fw.py boards validate` and must cover slot0/slot1
+sizing, scratch behavior, settings partition, factory reset behavior, signing
+key policy, rollback policy, and recovery process.

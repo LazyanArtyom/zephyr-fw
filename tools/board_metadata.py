@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pathlib
+import re
 import shlex
 from dataclasses import dataclass
 
@@ -29,7 +30,6 @@ REQUIRED_BOARD_FILES = (
     "release.conf",
     "production.conf",
     "flash.conf",
-    "production.yml",
     "README.md",
 )
 
@@ -37,6 +37,42 @@ VALID_DISPLAY_MODES = ("on", "off")
 VALID_SETTINGS_MODES = ("on", "off")
 VALID_BOOT_MODES = ("no-mcuboot", "mcuboot")
 LEGACY_APP_CONF = "app.conf"
+
+PRODUCTION_POLICY_FIELDS = (
+    "mcuboot_partition_layout",
+    "slot0_partition",
+    "slot0_offset",
+    "slot0_size",
+    "slot1_partition",
+    "slot1_offset",
+    "slot1_size",
+    "scratch_partition",
+    "scratch_offset",
+    "scratch_size",
+    "scratch_policy",
+    "settings_partition",
+    "settings_offset",
+    "settings_size",
+    "settings_backend",
+    "factory_reset_behavior",
+    "signing_key_policy",
+    "rollback_policy",
+    "recovery_process",
+)
+
+PRODUCTION_PARTITIONS = ("slot0", "slot1", "scratch", "settings")
+PRODUCTION_POLICY_CHOICES = {
+    "scratch_policy": ("swap-scratch", "overwrite-only", "none"),
+    "settings_backend": ("nvs", "none"),
+    "factory_reset_behavior": ("settings-only", "full-flash", "disabled"),
+    "signing_key_policy": ("ci-secret-store", "external", "development-local"),
+    "rollback_policy": ("confirm-before-permanent", "manual-confirm", "disabled"),
+    "recovery_process": ("serial-rom-esptool", "board-specific", "factory-programmer"),
+}
+
+IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_+-]*$")
+HEX_OFFSET_RE = re.compile(r"^0x[0-9A-Fa-f]+$")
+SIZE_RE = re.compile(r"^([1-9][0-9]*)([KkMm]?)$")
 
 
 class BoardMetadataError(RuntimeError):
@@ -119,6 +155,108 @@ def read_shell_assignments(path: pathlib.Path) -> dict[str, str]:
     return values
 
 
+def parse_size_bytes(value: str) -> int | None:
+    match = SIZE_RE.fullmatch(value)
+    if not match:
+        return None
+
+    amount = int(match.group(1))
+    suffix = match.group(2).upper()
+    if suffix == "K":
+        return amount * 1024
+    if suffix == "M":
+        return amount * 1024 * 1024
+    return amount
+
+
+def parse_offset(value: str) -> int | None:
+    if not HEX_OFFSET_RE.fullmatch(value):
+        return None
+    return int(value, 16)
+
+
+def read_production_policy(board: BoardProfile) -> dict[str, str]:
+    if not board.production_policy_path.is_file():
+        return {}
+    return read_flat_yaml(board.production_policy_path)
+
+
+def validate_production_policy(board: BoardProfile) -> list[str]:
+    path = board.production_policy_path
+    if not path.is_file():
+        return [f"{board.board_dir}: missing production.yml"]
+
+    policy = read_production_policy(board)
+    issues: list[str] = []
+    allowed_fields = set(PRODUCTION_POLICY_FIELDS)
+
+    missing = [field for field in PRODUCTION_POLICY_FIELDS if not policy.get(field)]
+    if missing:
+        issues.append(f"{path}: missing {', '.join(missing)}")
+
+    unknown = sorted(set(policy) - allowed_fields)
+    if unknown:
+        issues.append(f"{path}: unknown fields: {', '.join(unknown)}")
+
+    layout = policy.get("mcuboot_partition_layout", "")
+    if layout and not IDENTIFIER_RE.fullmatch(layout):
+        issues.append(f"{path}: mcuboot_partition_layout must be an identifier")
+
+    ranges: list[tuple[int, int, str]] = []
+    seen_partitions: dict[str, str] = {}
+    for partition in PRODUCTION_PARTITIONS:
+        partition_field = f"{partition}_partition"
+        offset_field = f"{partition}_offset"
+        size_field = f"{partition}_size"
+        partition_name = policy.get(partition_field, "")
+        offset = policy.get(offset_field, "")
+        size = policy.get(size_field, "")
+
+        if partition_name and not IDENTIFIER_RE.fullmatch(partition_name):
+            issues.append(f"{path}: {partition_field} must be an identifier")
+        elif partition_name:
+            previous = seen_partitions.get(partition_name)
+            if previous:
+                issues.append(f"{path}: {partition_field} duplicates {previous}")
+            seen_partitions[partition_name] = partition_field
+
+        offset_bytes = parse_offset(offset) if offset else None
+        if offset and offset_bytes is None:
+            issues.append(f"{path}: {offset_field} must be a hex offset like 0x20000")
+
+        size_bytes = parse_size_bytes(size) if size else None
+        if size and size_bytes is None:
+            issues.append(f"{path}: {size_field} must be bytes, K, or M, for example 1344K")
+
+        if offset_bytes is not None and size_bytes is not None:
+            ranges.append((offset_bytes, offset_bytes + size_bytes, partition))
+
+    slot0_size = parse_size_bytes(policy.get("slot0_size", ""))
+    slot1_size = parse_size_bytes(policy.get("slot1_size", ""))
+    if slot0_size is not None and slot1_size is not None and slot0_size != slot1_size:
+        issues.append(f"{path}: slot0_size and slot1_size must match for rollback/swap")
+
+    for field, choices in PRODUCTION_POLICY_CHOICES.items():
+        value = policy.get(field, "")
+        if value and value not in choices:
+            issues.append(f"{path}: {field} must be one of {', '.join(choices)}")
+
+    sorted_ranges = sorted(ranges)
+    for index, (start, end, name) in enumerate(sorted_ranges):
+        if start >= end:
+            issues.append(f"{path}: {name} partition size must be greater than zero")
+        if index == 0:
+            continue
+        previous_start, previous_end, previous_name = sorted_ranges[index - 1]
+        if start < previous_end:
+            issues.append(
+                f"{path}: {name} partition overlaps {previous_name} "
+                f"(0x{start:x}-0x{end:x} vs 0x{previous_start:x}-0x{previous_end:x})"
+            )
+
+    return issues
+
+
 def iter_board_profiles() -> list[BoardProfile]:
     boards: list[BoardProfile] = []
     for metadata_yml in sorted(BOARDS_DIR.glob("*/*/metadata.yml")):
@@ -154,6 +292,8 @@ def validate_board_profile(board: BoardProfile) -> list[str]:
     for required_file in REQUIRED_BOARD_FILES:
         if not (board_dir / required_file).is_file():
             issues.append(f"{board_dir}: missing {required_file}")
+
+    issues.extend(validate_production_policy(board))
 
     if board.legacy_app_conf_path.exists():
         issues.append(

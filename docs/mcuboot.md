@@ -44,8 +44,7 @@ partitions/esp32_oled.md
 
 The current policy uses the Espressif `partitions_0x1000_amp_4M` layout:
 slot0 and slot1 are both 1344K, settings use the 192K `storage_partition`, and
-MCUboot scratch uses the 124K `image-scratch` partition. Factory reset is
-settings-only and preserves bootloader slots, firmware images, board serial, and
-hardware revision. Private
-production signing keys stay outside git and are supplied by the CI signing
-environment.
+MCUboot scratch uses the 124K `scratch_partition` with `swap-scratch` policy.
+Factory reset is `settings-only`, rollback is `confirm-before-permanent`, and
+production signing keys use the `ci-secret-store` policy. Private production
+signing keys stay outside git and are supplied by the CI signing environment.

@@ -56,6 +56,34 @@ flash_offset:
 description: Short hardware description.
 ```
 
+Minimum production `production.yml`:
+
+```yaml
+mcuboot_partition_layout: custom_layout_name
+slot0_partition: slot0_partition
+slot0_offset: 0x20000
+slot0_size: 512K
+slot1_partition: slot1_partition
+slot1_offset: 0xa0000
+slot1_size: 512K
+scratch_partition: scratch_partition
+scratch_offset: 0x120000
+scratch_size: 64K
+scratch_policy: swap-scratch
+settings_partition: storage_partition
+settings_offset: 0x130000
+settings_size: 64K
+settings_backend: nvs
+factory_reset_behavior: settings-only
+signing_key_policy: ci-secret-store
+rollback_policy: confirm-before-permanent
+recovery_process: serial-rom-esptool
+```
+
+`tools/fw.py boards validate` schema-validates `production.yml`. Packaging also
+checks the built `zephyr.dts` partition names, offsets, and sizes against this
+policy before writing package metadata.
+
 For multi-core or qualified SoCs, use Zephyr's normalized filename rules:
 
 ```text
