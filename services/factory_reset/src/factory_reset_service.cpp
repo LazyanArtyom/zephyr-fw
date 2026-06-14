@@ -1,15 +1,10 @@
-#include <services/factory_reset/factory_reset_service.h>
-
 #include <platform/settings/settings_store.h>
+#include <services/factory_reset/factory_reset_service.h>
 
 namespace {
 
 constexpr platform::StringView kResetKeys[] = {
-    "fw/factory-reset-pending",
-    "user/profile",
-    "network/ssid",
-    "network/psk",
-    "display/contrast",
+    "fw/factory-reset-pending", "user/profile", "network/ssid", "network/psk", "display/contrast",
 };
 
 }  // namespace
@@ -17,7 +12,8 @@ constexpr platform::StringView kResetKeys[] = {
 namespace services::factory_reset {
 
 FactoryResetPolicy FactoryResetService::Policy() {
-    return {"settings-only", "bootloader slots, firmware images, board serial, and hardware revision"};
+    return {"settings-only",
+            "bootloader slots, firmware images, board serial, and hardware revision"};
 }
 
 platform::Status FactoryResetService::ResetSettings() {

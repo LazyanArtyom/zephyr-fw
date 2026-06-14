@@ -1,7 +1,6 @@
-#include <services/health/health_service.h>
-
 #include <platform/settings/settings_store.h>
 #include <platform/storage/storage_info.h>
+#include <services/health/health_service.h>
 
 namespace {
 

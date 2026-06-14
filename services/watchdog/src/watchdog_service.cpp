@@ -1,5 +1,4 @@
 #include <services/watchdog/watchdog_service.h>
-
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 

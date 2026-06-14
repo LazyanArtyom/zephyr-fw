@@ -1,6 +1,7 @@
 #ifndef PLATFORM_SHELL_CONSOLE_H_
 #define PLATFORM_SHELL_CONSOLE_H_
 
+#include <platform/core/status.h>
 #include <platform/core/string_view.h>
 
 #include <cstddef>
@@ -48,6 +49,9 @@ class Console final {
    private:
     const ::shell* native_shell_{nullptr};
 };
+
+[[nodiscard]] int StatusToErrno(const Status& status);
+int PrintStatusError(const Console& output, StringView action, const Status& status);
 
 }  // namespace platform::shell
 

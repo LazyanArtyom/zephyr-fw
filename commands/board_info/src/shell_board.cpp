@@ -62,34 +62,6 @@ void PrintBoardInfo(const platform::shell::Console& output) {
     output.field("Storage partition status", board_info.storage_partition_status());
 }
 
-
-int ToErrno(const platform::Status& status) {
-    switch (status.code()) {
-        case platform::StatusCode::kOk:
-            return 0;
-        case platform::StatusCode::kInvalidArgument:
-            return -EINVAL;
-        case platform::StatusCode::kNotFound:
-            return -ENOENT;
-        case platform::StatusCode::kPermissionDenied:
-            return -EACCES;
-        case platform::StatusCode::kBusy:
-            return -EBUSY;
-        case platform::StatusCode::kNotSupported:
-            return -ENOTSUP;
-        case platform::StatusCode::kUnavailable:
-            return -ENODEV;
-        default:
-            return -EIO;
-    }
-}
-
-int PrintStatusError(const platform::shell::Console& output, platform::StringView action,
-                     const platform::Status& status) {
-    output.error_subject(action, platform::ToString(status.code()), status.message());
-    return ToErrno(status);
-}
-
 void PrintManufacturingValue(const platform::shell::Console& output,
                              const services::health::ManufacturingValue& value) {
     output.field(value.key, value.value.view());
@@ -113,7 +85,7 @@ int CmdBoardSerial(const shell* shell, size_t argc, char** argv) {
         const platform::Status status =
             services::health::ManufacturingService::SetBoardSerial(arguments.at(3));
         if (!status.ok()) {
-            return PrintStatusError(output, "board serial set failed", status);
+            return platform::shell::PrintStatusError(output, "board serial set failed", status);
         }
         output.field("board/serial", arguments.at(3));
         return 0;
@@ -142,7 +114,7 @@ int CmdBoardHardwareRevision(const shell* shell, size_t argc, char** argv) {
         const platform::Status status =
             services::health::ManufacturingService::SetBoardHardwareRevision(arguments.at(3));
         if (!status.ok()) {
-            return PrintStatusError(output, "board hw-rev set failed", status);
+            return platform::shell::PrintStatusError(output, "board hw-rev set failed", status);
         }
         output.field("board/hw-rev", arguments.at(3));
         return 0;
@@ -179,12 +151,14 @@ int CmdBoardCaps(const shell* shell, size_t argc, char** argv) {
 
 }  // namespace
 
+/* clang-format off */
 SHELL_STATIC_SUBCMD_SET_CREATE(board_subcommands,
                                SHELL_CMD(info, NULL, "Show board information.", CmdBoardInfo),
                                SHELL_CMD(caps, NULL, "Show board capabilities.", CmdBoardCaps),
                                SHELL_CMD_ARG(serial, NULL, "Get or set board serial.", CmdBoardSerial, 3, 1),
                                SHELL_CMD_ARG(hw-rev, NULL, "Get or set board hardware revision.", CmdBoardHardwareRevision, 3, 1),
                                SHELL_SUBCMD_SET_END);
+/* clang-format on */
 
 SHELL_CMD_REGISTER(board_info, NULL, "Show board information.", CmdBoardInfo);
 SHELL_CMD_REGISTER(board, &board_subcommands, "Board commands.", NULL);

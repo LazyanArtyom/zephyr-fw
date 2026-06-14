@@ -1,6 +1,5 @@
-#include <platform/storage/storage_info.h>
-
 #include <errno.h>
+#include <platform/storage/storage_info.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/storage/flash_map.h>
 

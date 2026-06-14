@@ -16,33 +16,6 @@ int PrintUsage(const platform::shell::Console& output) {
     return 0;
 }
 
-int ToErrno(const platform::Status& status) {
-    switch (status.code()) {
-        case platform::StatusCode::kOk:
-            return 0;
-        case platform::StatusCode::kInvalidArgument:
-            return -EINVAL;
-        case platform::StatusCode::kNotFound:
-            return -ENOENT;
-        case platform::StatusCode::kPermissionDenied:
-            return -EACCES;
-        case platform::StatusCode::kBusy:
-            return -EBUSY;
-        case platform::StatusCode::kNotSupported:
-            return -ENOTSUP;
-        case platform::StatusCode::kUnavailable:
-            return -ENODEV;
-        default:
-            return -EIO;
-    }
-}
-
-int PrintStatusError(const platform::shell::Console& output, platform::StringView action,
-                     const platform::Status& status) {
-    output.error_subject(action, platform::ToString(status.code()), status.message());
-    return ToErrno(status);
-}
-
 platform::Status PrintSettingKey(platform::StringView key, void* context) {
     static_cast<const platform::shell::Console*>(context)->line(key);
     return platform::Status::Ok();
@@ -54,7 +27,7 @@ int CmdList(const platform::shell::Console& output, const platform::shell::Argum
     const platform::Status status = platform::SettingsStore::List(
         PrintSettingKey, const_cast<platform::shell::Console*>(&output), subtree);
     if (!status.ok()) {
-        return PrintStatusError(output, "settings list failed", status);
+        return platform::shell::PrintStatusError(output, "settings list failed", status);
     }
     return 0;
 }
@@ -67,7 +40,7 @@ int CmdGet(const platform::shell::Console& output, const platform::shell::Argume
     const platform::Result<platform::SettingValue> value =
         platform::SettingsStore::GetString(arguments.at(2));
     if (!value.ok()) {
-        return PrintStatusError(output, "settings get failed", value.status());
+        return platform::shell::PrintStatusError(output, "settings get failed", value.status());
     }
 
     output.line(value.value().view());
@@ -82,7 +55,7 @@ int CmdSet(const platform::shell::Console& output, const platform::shell::Argume
     const platform::Status status =
         platform::SettingsStore::SetString(arguments.at(2), arguments.at(3));
     if (!status.ok()) {
-        return PrintStatusError(output, "settings set failed", status);
+        return platform::shell::PrintStatusError(output, "settings set failed", status);
     }
 
     output.field("Saved", arguments.at(2));
@@ -96,7 +69,7 @@ int CmdReset(const platform::shell::Console& output, const platform::shell::Argu
 
     const platform::Status status = platform::SettingsStore::Reset(arguments.at(2));
     if (!status.ok()) {
-        return PrintStatusError(output, "settings reset failed", status);
+        return platform::shell::PrintStatusError(output, "settings reset failed", status);
     }
 
     output.field("Reset", arguments.at(2));
@@ -106,7 +79,7 @@ int CmdReset(const platform::shell::Console& output, const platform::shell::Argu
 int CmdSave(const platform::shell::Console& output) {
     const platform::Status status = platform::SettingsStore::Save();
     if (!status.ok()) {
-        return PrintStatusError(output, "settings save failed", status);
+        return platform::shell::PrintStatusError(output, "settings save failed", status);
     }
     output.line("Settings saved.");
     return 0;
@@ -115,7 +88,7 @@ int CmdSave(const platform::shell::Console& output) {
 int CmdLoad(const platform::shell::Console& output) {
     const platform::Status status = platform::SettingsStore::Load();
     if (!status.ok()) {
-        return PrintStatusError(output, "settings load failed", status);
+        return platform::shell::PrintStatusError(output, "settings load failed", status);
     }
     output.line("Settings loaded.");
     return 0;

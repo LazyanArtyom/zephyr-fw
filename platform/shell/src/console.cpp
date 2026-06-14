@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <platform/shell/console.h>
 #include <zephyr/shell/shell.h>
 
@@ -60,6 +61,40 @@ void Console::error_subject(StringView message, StringView subject, StringView d
 
 void Console::error_option(char option) const {
     shell_error(native_shell_, "unknown option: -%c", option);
+}
+
+int StatusToErrno(const Status& status) {
+    switch (status.code()) {
+        case StatusCode::kOk:
+            return 0;
+        case StatusCode::kInvalidArgument:
+            return -EINVAL;
+        case StatusCode::kNotFound:
+            return -ENOENT;
+        case StatusCode::kAlreadyExists:
+            return -EEXIST;
+        case StatusCode::kPermissionDenied:
+            return -EACCES;
+        case StatusCode::kFailedPrecondition:
+            return -EINVAL;
+        case StatusCode::kBusy:
+            return -EBUSY;
+        case StatusCode::kTimeout:
+            return -ETIMEDOUT;
+        case StatusCode::kNotSupported:
+            return -ENOTSUP;
+        case StatusCode::kUnavailable:
+            return -ENODEV;
+        case StatusCode::kInternalError:
+            return -EIO;
+    }
+
+    return -EIO;
+}
+
+int PrintStatusError(const Console& output, StringView action, const Status& status) {
+    output.error_subject(action, ToString(status.code()), status.message());
+    return StatusToErrno(status);
 }
 
 }  // namespace platform::shell

@@ -1,40 +1,13 @@
 #include <errno.h>
 #include <platform/core/status.h>
-#include <platform/storage/storage_info.h>
 #include <platform/shell/console.h>
+#include <platform/storage/storage_info.h>
 #include <services/factory_reset/factory_reset_service.h>
 #include <services/health/health_service.h>
 #include <services/watchdog/watchdog_service.h>
 #include <zephyr/shell/shell.h>
 
 namespace {
-
-int ToErrno(const platform::Status& status) {
-    switch (status.code()) {
-        case platform::StatusCode::kOk:
-            return 0;
-        case platform::StatusCode::kInvalidArgument:
-            return -EINVAL;
-        case platform::StatusCode::kNotFound:
-            return -ENOENT;
-        case platform::StatusCode::kPermissionDenied:
-            return -EACCES;
-        case platform::StatusCode::kBusy:
-            return -EBUSY;
-        case platform::StatusCode::kNotSupported:
-            return -ENOTSUP;
-        case platform::StatusCode::kUnavailable:
-            return -ENODEV;
-        default:
-            return -EIO;
-    }
-}
-
-int PrintStatusError(const platform::shell::Console& output, platform::StringView action,
-                     const platform::Status& status) {
-    output.error_subject(action, platform::ToString(status.code()), status.message());
-    return ToErrno(status);
-}
 
 int PrintUsage(const platform::shell::Console& output) {
     output.line("Usage:");
@@ -48,7 +21,7 @@ int PrintUsage(const platform::shell::Console& output) {
 int CmdHealthStatus(const platform::shell::Console& output) {
     const platform::Status status = services::health::HealthService::OverallStatus();
     if (!status.ok()) {
-        return PrintStatusError(output, "health check failed", status);
+        return platform::shell::PrintStatusError(output, "health check failed", status);
     }
     output.field("Health", "ok");
     return 0;
@@ -61,7 +34,7 @@ int CmdStorageInfo(const platform::shell::Console& output) {
     const platform::Result<platform::StoragePartitionInfo> storage =
         platform::StorageInfo::SettingsPartition();
     if (!storage.ok()) {
-        return PrintStatusError(output, "storage info failed", storage.status());
+        return platform::shell::PrintStatusError(output, "storage info failed", storage.status());
     }
 
     output.field("Partition", storage.value().label);
@@ -78,7 +51,7 @@ int CmdFactoryReset(const platform::shell::Console& output) {
 
     const platform::Status status = services::factory_reset::FactoryResetService::ResetSettings();
     if (!status.ok()) {
-        return PrintStatusError(output, "factory reset failed", status);
+        return platform::shell::PrintStatusError(output, "factory reset failed", status);
     }
 
     output.line("Factory reset complete.");
