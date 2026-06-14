@@ -3,7 +3,7 @@
 #include <platform/core/clock.h>
 #include <platform/core/reset_info.h>
 #include <platform/shell/console.h>
-#include <services/health/health_service.h>
+#include <services/manufacturing/manufacturing_service.h>
 #include <zephyr/shell/shell.h>
 
 namespace {
@@ -63,7 +63,7 @@ void PrintBoardInfo(const platform::shell::Console& output) {
 }
 
 void PrintManufacturingValue(const platform::shell::Console& output,
-                             const services::health::ManufacturingValue& value) {
+                             const services::manufacturing::ManufacturingValue& value) {
     output.field(value.key, value.value.view());
 }
 
@@ -78,12 +78,13 @@ int CmdBoardSerial(const shell* shell, size_t argc, char** argv) {
 
     const platform::StringView action = arguments.at(2);
     if (action.equals("get")) {
-        PrintManufacturingValue(output, services::health::ManufacturingService::BoardSerial());
+        PrintManufacturingValue(output,
+                                services::manufacturing::ManufacturingService::BoardSerial());
         return 0;
     }
     if (action.equals("set") && arguments.size() == 4) {
         const platform::Status status =
-            services::health::ManufacturingService::SetBoardSerial(arguments.at(3));
+            services::manufacturing::ManufacturingService::SetBoardSerial(arguments.at(3));
         if (!status.ok()) {
             return platform::shell::PrintStatusError(output, "board serial set failed", status);
         }
@@ -106,13 +107,14 @@ int CmdBoardHardwareRevision(const shell* shell, size_t argc, char** argv) {
 
     const platform::StringView action = arguments.at(2);
     if (action.equals("get")) {
-        PrintManufacturingValue(output,
-                                services::health::ManufacturingService::BoardHardwareRevision());
+        PrintManufacturingValue(
+            output, services::manufacturing::ManufacturingService::BoardHardwareRevision());
         return 0;
     }
     if (action.equals("set") && arguments.size() == 4) {
         const platform::Status status =
-            services::health::ManufacturingService::SetBoardHardwareRevision(arguments.at(3));
+            services::manufacturing::ManufacturingService::SetBoardHardwareRevision(
+                arguments.at(3));
         if (!status.ok()) {
             return platform::shell::PrintStatusError(output, "board hw-rev set failed", status);
         }

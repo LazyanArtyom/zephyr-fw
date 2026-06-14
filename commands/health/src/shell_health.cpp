@@ -98,4 +98,4 @@ int CmdHealth(const shell* shell, size_t argc, char** argv) {
 
 }  // namespace
 
-SHELL_CMD_ARG_REGISTER(health, NULL, "Health and manufacturing support commands.", CmdHealth, 1, 3);
+SHELL_CMD_ARG_REGISTER(health, NULL, "Health support commands.", CmdHealth, 1, 3);

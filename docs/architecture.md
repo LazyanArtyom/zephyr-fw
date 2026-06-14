@@ -66,3 +66,11 @@ common/
 
 Until then, keep common application logic board-independent and make board
 differences visible through board-root devicetree, Kconfig, and board metadata.
+
+## Domain Boundaries
+
+Runtime health and manufacturing identity are separate domains. Board serial and
+hardware revision are persisted by `platform::BoardIdentityStore` and exposed to
+application code through `services::manufacturing`. Health checks may depend on
+the same storage backend, but health services should not own manufacturing
+identity data.

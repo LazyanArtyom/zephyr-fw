@@ -1,3 +1,4 @@
+add_subdirectory(manufacturing)
 add_subdirectory(health)
 add_subdirectory(display)
 add_subdirectory(watchdog)
