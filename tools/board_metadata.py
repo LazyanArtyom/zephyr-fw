@@ -21,6 +21,23 @@ REQUIRED_BOARD_FIELDS = (
     "serial_baud",
 )
 
+REQUIRED_BOARD_FILES = (
+    "board.yml",
+    "board.conf",
+    "board.overlay",
+    "debug.conf",
+    "release.conf",
+    "production.conf",
+    "flash.conf",
+    "production.yml",
+    "README.md",
+)
+
+VALID_DISPLAY_MODES = ("on", "off")
+VALID_SETTINGS_MODES = ("on", "off")
+VALID_BOOT_MODES = ("no-mcuboot", "mcuboot")
+LEGACY_APP_CONF = "app.conf"
+
 
 class BoardMetadataError(RuntimeError):
     pass
@@ -34,6 +51,30 @@ class BoardProfile:
     @property
     def board_dir(self) -> pathlib.Path:
         return self.metadata_path.parent
+
+    @property
+    def board_yml_path(self) -> pathlib.Path:
+        return self.board_dir / "board.yml"
+
+    @property
+    def board_conf_path(self) -> pathlib.Path:
+        return self.board_dir / "board.conf"
+
+    @property
+    def board_overlay_path(self) -> pathlib.Path:
+        return self.board_dir / "board.overlay"
+
+    @property
+    def flash_conf_path(self) -> pathlib.Path:
+        return self.board_dir / "flash.conf"
+
+    @property
+    def production_policy_path(self) -> pathlib.Path:
+        return self.board_dir / "production.yml"
+
+    @property
+    def legacy_app_conf_path(self) -> pathlib.Path:
+        return self.board_dir / LEGACY_APP_CONF
 
     @property
     def profile(self) -> str:
@@ -101,8 +142,53 @@ def require_board_profile(profile: str) -> BoardProfile:
     return board
 
 
+def validate_board_profile(board: BoardProfile) -> list[str]:
+    issues: list[str] = []
+    metadata_yml = board.metadata_path
+    board_dir = board.board_dir
+
+    missing_fields = [field for field in REQUIRED_BOARD_FIELDS if not board.get(field)]
+    if missing_fields:
+        issues.append(f"{metadata_yml}: missing {', '.join(missing_fields)}")
+
+    for required_file in REQUIRED_BOARD_FILES:
+        if not (board_dir / required_file).is_file():
+            issues.append(f"{board_dir}: missing {required_file}")
+
+    if board.legacy_app_conf_path.exists():
+        issues.append(
+            f"{board.legacy_app_conf_path}: legacy app.conf is not supported; "
+            "move board application defaults to board.conf"
+        )
+
+    if not any(board_dir.glob("*.dts")):
+        issues.append(f"{board_dir}: missing Zephyr devicetree (*.dts)")
+    if not any(board_dir.glob("*_defconfig")):
+        issues.append(f"{board_dir}: missing Zephyr board defconfig (*_defconfig)")
+
+    status = board.get("status")
+    if status == "enabled" and not board.get("zephyr_board"):
+        issues.append(f"{metadata_yml}: enabled boards must set zephyr_board")
+    if board.get("default_display") and board.get("default_display") not in VALID_DISPLAY_MODES:
+        issues.append(f"{metadata_yml}: default_display must be on or off")
+    if board.get("default_settings") and board.get("default_settings") not in VALID_SETTINGS_MODES:
+        issues.append(f"{metadata_yml}: default_settings must be on or off")
+    if board.get("default_boot") and board.get("default_boot") not in VALID_BOOT_MODES:
+        issues.append(f"{metadata_yml}: default_boot must be no-mcuboot or mcuboot")
+
+    return issues
+
+
+def require_valid_board_profile(profile: str) -> BoardProfile:
+    board = require_board_profile(profile)
+    issues = validate_board_profile(board)
+    if issues:
+        raise BoardMetadataError("\n".join(issues))
+    return board
+
+
 def resolved_flash_settings(board: BoardProfile) -> dict[str, str]:
-    flash_conf = read_shell_assignments(board.board_dir / "flash.conf")
+    flash_conf = read_shell_assignments(board.flash_conf_path)
     return {
         "runner": board.get("flash_runner"),
         "chip": flash_conf.get("FLASH_CHIP") or board.get("flash_chip") or "esp32",
@@ -123,6 +209,11 @@ def board_shell_environment(board: BoardProfile) -> dict[str, str]:
     return {
         "BOARD_METADATA": str(board.metadata_path),
         "BOARD_DIR": str(board.board_dir),
+        "BOARD_YML": str(board.board_yml_path),
+        "BOARD_CONF": str(board.board_conf_path),
+        "BOARD_OVERLAY": str(board.board_overlay_path),
+        "BOARD_FLASH_CONF": str(board.flash_conf_path),
+        "BOARD_PRODUCTION_POLICY": str(board.production_policy_path),
         "BOARD_ROOT": str(PROJECT_ROOT),
         "BOARD_PROFILE": board.profile,
         "BOARD_STATUS": board.get("status"),

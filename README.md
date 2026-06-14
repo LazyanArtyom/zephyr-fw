@@ -121,6 +121,9 @@ List board profiles:
 ./scripts/build.sh --list-boards
 ```
 
+Board application defaults live in each board's `board.conf`. Legacy
+`app.conf` files are not read.
+
 ## Flash
 
 The flash script uses `python3 -m esptool` by default. Pass `--python` when you

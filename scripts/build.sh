@@ -214,8 +214,7 @@ if [[ -z "${BOARD_PROFILE}" ]]; then
 fi
 
 load_board_env "${BOARD_PROFILE}"
-BOARD_ZEPHYR_YML="${BOARD_DIR}/board.yml"
-[[ -f "${BOARD_ZEPHYR_YML}" ]] || die "Zephyr board.yml not found: ${BOARD_ZEPHYR_YML}"
+[[ -f "${BOARD_YML}" ]] || die "Zephyr board.yml not found: ${BOARD_YML}"
 
 if [[ "${BOARD_STATUS}" != "enabled" ]]; then
     die "${BOARD_PROFILE} is not enabled yet (status: ${BOARD_STATUS:-unknown})"
@@ -319,9 +318,7 @@ fi
 
 COMMON_CONF="${PROJECT_ROOT}/prj.conf"
 LOGGING_CONF="${PROJECT_ROOT}/configs/features/logging.conf"
-BOARD_CONF="${BOARD_DIR}/board.conf"
 BOARD_PROFILE_CONF="${BOARD_DIR}/${BUILD_PROFILE}.conf"
-BOARD_OVERLAY="${BOARD_DIR}/board.overlay"
 [[ -f "${BOARD_CONF}" ]] || die "board config not found: ${BOARD_CONF}"
 
 CONF_FILES=()

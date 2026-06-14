@@ -17,9 +17,13 @@ The primary build entry point is:
 
 Board hardware is selected by Zephyr board-root files under
 `boards/<vendor>/<board>/`. Application policy is selected by `metadata.yml`,
-`board.conf`, and profile/config fragments. Use
-`scripts/package.sh` after a successful build when you need distributable
-artifacts.
+`board.conf`, and profile/config fragments. Board metadata and board-local
+paths are parsed through `tools/board_metadata.py`, exposed to shell entry
+points by `tools/fw.py boards env`. Use `scripts/package.sh` after a successful
+build when you need distributable artifacts.
+
+Legacy `boards/<vendor>/<board>/app.conf` files are intentionally unsupported;
+`tools/fw.py boards validate` fails when one is present.
 
 ## Output Layout
 

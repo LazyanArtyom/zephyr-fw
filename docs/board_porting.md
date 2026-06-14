@@ -84,4 +84,8 @@ Keep required board policy files present, even when the first version only docum
 `boards/espressif/esp32_oled/` as the reference implementation when adding a
 new board.
 
+Do not create an `app.conf` fallback. Board application defaults belong in
+`board.conf`, and validation rejects legacy `app.conf` files to prevent config
+drift.
+
 Do not hardcode board pins in C++ code.

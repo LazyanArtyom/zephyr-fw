@@ -10,7 +10,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 
-from board_metadata import PROJECT_ROOT, read_flat_yaml, require_board_profile, resolved_flash_settings
+from board_metadata import PROJECT_ROOT, read_flat_yaml, require_valid_board_profile, resolved_flash_settings
 
 
 @dataclass(frozen=True)
@@ -178,8 +178,8 @@ def create_package(options: PackageOptions) -> pathlib.Path:
     app_version = read_version(PROJECT_ROOT / app_version_file)
     app_slug = project_env.get("APP_SLUG", "firmware")
 
-    board = require_board_profile(options.board_profile)
-    production_policy_file = board.board_dir / "production.yml"
+    board = require_valid_board_profile(options.board_profile)
+    production_policy_file = board.production_policy_path
     production_policy = read_flat_yaml(production_policy_file) if production_policy_file.is_file() else {}
     flash = resolved_flash_settings(board)
 
