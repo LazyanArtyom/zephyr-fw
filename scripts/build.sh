@@ -317,13 +317,11 @@ if [[ "${SHELL_MODE}" == "on" ]]; then
 fi
 
 COMMON_CONF="${PROJECT_ROOT}/prj.conf"
-LOGGING_CONF="${PROJECT_ROOT}/configs/features/logging.conf"
 BOARD_PROFILE_CONF="${BOARD_DIR}/${BUILD_PROFILE}.conf"
 [[ -f "${BOARD_CONF}" ]] || die "board config not found: ${BOARD_CONF}"
 
 CONF_FILES=()
 add_conf_if_exists "${COMMON_CONF}"
-add_conf_if_exists "${LOGGING_CONF}"
 add_conf_if_exists "${BOARD_CONF}"
 add_conf_if_exists "${PROFILE_CONF}"
 add_conf_if_exists "${BOARD_PROFILE_CONF}"

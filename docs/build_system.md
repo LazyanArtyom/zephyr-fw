@@ -44,12 +44,12 @@ The build script composes config fragments in this order:
 
 ```text
 prj.conf
-configs/features/logging.conf
 boards/<vendor>/<board>/board.conf
 configs/profiles/<profile>.conf
 boards/<vendor>/<board>/<profile>.conf
 configs/boot/<boot>.conf
 configs/features/display.conf or no_display.conf
+configs/features/settings.conf or no_settings.conf
 configs/features/shell.conf or no_shell.conf
 generated shell prompt config
 configs/features/no_asserts.conf
@@ -59,3 +59,12 @@ Later fragments intentionally override earlier fragments.
 
 The build also passes `-DBOARD_ROOT=<project root>`, so custom boards in this
 repository are resolved directly by Zephyr.
+
+## Feature Fragments
+
+Feature fragments are intentionally small policy fragments. Keep board
+hardware capabilities such as I2C in `board.conf`; keep feature-specific driver
+and application selections in `configs/features/`. Always-on application defaults,
+including logging backend defaults, belong in `prj.conf`. The `no_*` fragments are kept
+so metadata-selected features can be disabled deterministically even when a board
+or profile fragment enables them earlier in the config order.

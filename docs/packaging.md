@@ -28,7 +28,6 @@ zephyr.dts
 zephyr.config
 build_info.yml
 manifest.json
-firmware.meta.json
 firmware.sha256
 flash.sh
 README.txt
@@ -47,18 +46,15 @@ zephyr.bin
 zephyr.signed.bin          # when MCUboot signing produced it
 app_update.bin             # when MCUboot/update output exists
 mcuboot.bin                # when sysbuild produced it
-firmware.meta.json
 manifest.json
 firmware.sha256
 zephyr.config
 zephyr.dts
 flash.sh
 partition_summary.txt
-partition_policy.md
 production.yml
 ```
 
-`manifest.json` is canonical. `firmware.meta.json` is retained as a compatibility
-copy for older tools. The manifest records slot sizing, scratch policy,
-settings partition, signing key policy, rollback policy, factory reset behavior,
-and recovery process from the board production policy.
+`manifest.json` is the single package metadata file. It records slot sizing,
+scratch policy, settings partition, signing key policy, rollback policy,
+factory reset behavior, and recovery process from the board production policy.

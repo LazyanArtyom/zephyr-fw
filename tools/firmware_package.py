@@ -372,7 +372,6 @@ def create_package(options: PackageOptions) -> pathlib.Path:
     copy_if_exists(build_dir / "build_info.yml", package_dir)
     copy_if_exists(build_dir / "compile_commands.json", package_dir)
     copy_if_exists(production_policy_file, package_dir, "production.yml")
-    copy_if_exists(PROJECT_ROOT / "partitions" / f"{options.board_profile}.md", package_dir, "partition_policy.md")
     copy_if_exists(build_dir / "domains.yaml", package_dir)
     copy_if_exists(build_dir / "mcuboot" / "zephyr" / "zephyr.bin", package_dir, "mcuboot.bin")
 
@@ -437,7 +436,6 @@ def create_package(options: PackageOptions) -> pathlib.Path:
     }
     manifest_json = json.dumps(manifest, indent=2, sort_keys=False) + "\n"
     (package_dir / "manifest.json").write_text(manifest_json, encoding="utf-8")
-    (package_dir / "firmware.meta.json").write_text(manifest_json, encoding="utf-8")
 
     readme = (
         f"{project_env.get('APP_DISPLAY_NAME', app_slug)} firmware package\n\n"
@@ -451,7 +449,6 @@ def create_package(options: PackageOptions) -> pathlib.Path:
         "  zephyr.bin\n\n"
         "Metadata:\n"
         "  manifest.json\n"
-        "  firmware.meta.json\n"
         "  firmware.sha256\n"
         "  partition_summary.txt\n"
         "  production.yml\n\n"

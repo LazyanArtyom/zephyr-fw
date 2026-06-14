@@ -16,6 +16,8 @@ Alias:   display0
 
 Display support is selected by board metadata and app config
 fragments. Keep application modules buildable when display support is disabled.
+I2C hardware belongs to the board config; display fragments only select display
+application and driver support.
 
 
 ## Persistent Settings

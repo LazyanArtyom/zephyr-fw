@@ -172,7 +172,6 @@ dist/zephyr-fw_0.1.0_esp32_oled_debug_no-mcuboot/
 ├── zephyr.bin
 ├── zephyr.elf
 ├── zephyr.map
-├── firmware.meta.json
 ├── manifest.json
 ├── firmware.sha256
 ├── zephyr.config

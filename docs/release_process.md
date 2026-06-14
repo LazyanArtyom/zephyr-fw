@@ -18,5 +18,5 @@ Quiet logging by default
 Assertions policy documented
 Signing keys kept outside git
 Artifacts are versioned and checksummed
-Board partition layout documented
+Board production policy validated against built devicetree
 ```

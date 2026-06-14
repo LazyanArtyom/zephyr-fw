@@ -3,6 +3,7 @@ dist/
 compile_commands.json
 .cache/
 .DS_Store
+CMakePresets.json
 CMakeUserPresets.json
 
 # Signing material. Keep production private keys out of the repository.
