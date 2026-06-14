@@ -14,13 +14,17 @@ boards/<vendor>/<board>/board.cmake
 boards/<vendor>/<board>/support/openocd.cfg
 ```
 
-Board profile policy:
+Board profile and production policy:
 
 ```text
 boards/<vendor>/<board>/metadata.yml
 boards/<vendor>/<board>/board.conf
-boards/<vendor>/<board>/<profile>.conf
+boards/<vendor>/<board>/board.overlay
+boards/<vendor>/<board>/debug.conf
+boards/<vendor>/<board>/release.conf
+boards/<vendor>/<board>/production.conf
 boards/<vendor>/<board>/flash.conf
+boards/<vendor>/<board>/production.yml
 ```
 
 Feature selection:
@@ -31,19 +35,46 @@ configs/profiles/
 configs/boot/
 ```
 
-Application code:
+Application entry point:
 
 ```text
-app/src/
-app/services/
-app/shell/
-app/tools/
+app/main/
+```
+
+Reusable platform modules:
+
+```text
+platform/board/
+platform/settings/
+platform/shell/
+platform/storage/
+```
+
+Product services:
+
+```text
+services/display/
+services/factory_reset/
+services/health/
+services/manufacturing/
+services/watchdog/
+```
+
+Shell command modules:
+
+```text
+commands/board/
+commands/fw/
+commands/health/
+commands/settings/
+commands/system/
 ```
 
 Build/deploy workflow:
 
 ```text
 scripts/
+tools/
 .vscode/
 dist/
 ```

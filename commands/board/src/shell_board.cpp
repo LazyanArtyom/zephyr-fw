@@ -162,5 +162,4 @@ SHELL_STATIC_SUBCMD_SET_CREATE(board_subcommands,
                                SHELL_SUBCMD_SET_END);
 /* clang-format on */
 
-SHELL_CMD_REGISTER(board_info, NULL, "Show board information.", CmdBoardInfo);
 SHELL_CMD_REGISTER(board, &board_subcommands, "Board commands.", NULL);

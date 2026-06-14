@@ -104,7 +104,7 @@ def package_name_from_components(
 
     return "_".join(
         (
-            require_package_component("APP_SLUG", slug),
+            require_package_component("FW_SLUG", slug),
             require_package_component("version", version),
             require_package_component("board profile", board_profile),
             require_package_component("build profile", build_profile),
@@ -321,9 +321,9 @@ def write_flash_helper(package_dir: pathlib.Path, board_profile: str, flash: dic
 
 def create_package(options: PackageOptions) -> pathlib.Path:
     project_env = read_project_env()
-    app_version_file = project_env.get("APP_VERSION_FILE", "VERSION")
+    app_version_file = project_env.get("FW_VERSION_FILE", "VERSION")
     app_version = read_version(PROJECT_ROOT / app_version_file)
-    app_slug = project_env.get("APP_SLUG", "firmware")
+    app_slug = project_env.get("FW_SLUG", "firmware")
 
     package_name = package_name_from_components(
         app_slug,
@@ -381,9 +381,9 @@ def create_package(options: PackageOptions) -> pathlib.Path:
     )
 
     manifest = {
-        "display_name": project_env.get("APP_DISPLAY_NAME", ""),
+        "display_name": project_env.get("FW_DISPLAY_NAME", ""),
         "slug": app_slug,
-        "firmware_name": project_env.get("APP_FIRMWARE_NAME", app_slug),
+        "firmware_name": project_env.get("FW_FIRMWARE_NAME", app_slug),
         "version": app_version,
         "board_profile": board.profile,
         "board_display_name": board.get("display_name", "unknown"),
@@ -438,7 +438,7 @@ def create_package(options: PackageOptions) -> pathlib.Path:
     (package_dir / "manifest.json").write_text(manifest_json, encoding="utf-8")
 
     readme = (
-        f"{project_env.get('APP_DISPLAY_NAME', app_slug)} firmware package\n\n"
+        f"{project_env.get('FW_DISPLAY_NAME', app_slug)} firmware package\n\n"
         f"Package: {package_name}\n"
         f"Version: {app_version}\n"
         f"Board profile: {board.profile}\n"

@@ -1,0 +1,9 @@
+config FW_CMD_BOARD
+    bool "Enable custom board commands"
+    depends on FW_SHELL
+    help
+      Enables project-owned shell commands under: commands/board
+
+      Runtime commands:
+        board info
+        board caps

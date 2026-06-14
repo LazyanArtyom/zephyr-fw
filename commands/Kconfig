@@ -2,7 +2,7 @@ menu "Custom Firmware Shell Commands"
     depends on FW_SHELL
 
 rsource "fw/Kconfig"
-rsource "board_info/Kconfig"
+rsource "board/Kconfig"
 rsource "system/Kconfig"
 rsource "health/Kconfig"
 rsource "settings/Kconfig"

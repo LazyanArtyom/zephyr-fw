@@ -79,9 +79,6 @@ int CmdHealth(const shell* shell, size_t argc, char** argv) {
     if (command.equals("status")) {
         return CmdHealthStatus(output);
     }
-    if (command.equals("factory-reset")) {
-        return CmdFactoryReset(output);
-    }
     if (command.equals("factory") && arguments.size() >= 3 && arguments.at(2).equals("reset")) {
         return CmdFactoryReset(output);
     }

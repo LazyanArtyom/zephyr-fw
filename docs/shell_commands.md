@@ -20,9 +20,12 @@ Commands:
 fw info
 fw version
 fw build
-board_info
 board info
 board caps
+board serial get
+board serial set <value>
+board hw-rev get
+board hw-rev set <value>
 system uptime
 system reset-reason
 system reboot
@@ -36,10 +39,6 @@ health status
 health storage info
 health factory reset
 health watchdog status
-board serial get
-board serial set <value>
-board hw-rev get
-board hw-rev set <value>
 i2cdetect -r -y 0
 i2cdetect -y i2c0
 i2cdetect -a -r -y 0

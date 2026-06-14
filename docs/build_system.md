@@ -22,9 +22,6 @@ paths are parsed through `tools/board_metadata.py`, exposed to shell entry
 points by `tools/fw.py boards env`. Use `scripts/package.sh` after a successful
 build when you need distributable artifacts.
 
-Legacy `boards/<vendor>/<board>/app.conf` files are intentionally unsupported;
-`tools/fw.py boards validate` fails when one is present.
-
 ## Output Layout
 
 ```text

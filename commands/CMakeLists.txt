@@ -1,4 +1,4 @@
-add_subdirectory(board_info)
+add_subdirectory(board)
 add_subdirectory(settings)
 add_subdirectory(i2cdetect)
 add_subdirectory(system)

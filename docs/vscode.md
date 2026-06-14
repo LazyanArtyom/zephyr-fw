@@ -38,8 +38,6 @@ This creates a host-path-adjusted and clangd-friendly `compile_commands.json`.
 Use the clangd extension as the primary C/C++ language server. The Microsoft
 C/C++ extension IntelliSense and automatic clang-tidy runner are disabled in
 workspace settings so diagnostics come from one place.
-Recommended extensions are listed in `.vscode/extensions.json`.
-
 The exported compile database can rewrite Docker paths when needed. Pass
 `--container-root` and `--host-root` if the build path inside Docker differs
 from the host path.
