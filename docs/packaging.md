@@ -1,10 +1,16 @@
 # Packaging
 
-Create packages with:
+Create packages from build directories:
 
 ```bash
-./scripts/package.sh --board esp32_oled --profile debug --boot no-mcuboot
+./scripts/package.sh build/esp32_oled/debug/no-mcuboot
+./scripts/package.sh build/esp32_oled/production/no-mcuboot
+./scripts/package.sh build/esp32_oled/production/mcuboot
 ```
+
+The build directory name is the package selector: `build/<board>/<profile>/<boot>`.
+When run interactively without arguments, `package.sh` lists available completed
+build directories and asks which one to package.
 
 `scripts/package.sh` is the stable packaging entry point. Package assembly,
 manifest generation, checksums, partition summaries, and production policy

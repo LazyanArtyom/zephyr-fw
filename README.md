@@ -91,11 +91,16 @@ Build a production MCUboot image:
 ./scripts/build.sh --board esp32_oled --profile production --boot mcuboot
 ```
 
-Create a distributable package under `dist/`:
+Create a distributable package from a build directory under `dist/`:
 
 ```bash
-./scripts/package.sh --board esp32_oled --profile debug --boot no-mcuboot
+./scripts/package.sh build/esp32_oled/debug/no-mcuboot
+./scripts/package.sh build/esp32_oled/production/no-mcuboot
+./scripts/package.sh build/esp32_oled/production/mcuboot
 ```
+
+When run from a terminal without arguments, `package.sh` prompts for the build
+directory to package.
 
 Programming is a host-side step. Build/package inside Docker if that is your
 Zephyr environment, then run programming commands from the macOS/Linux terminal
@@ -183,7 +188,7 @@ Run the configured build matrix:
 Create and validate a package:
 
 ```bash
-./scripts/package.sh --board esp32_oled --profile debug --boot no-mcuboot
+./scripts/package.sh build/esp32_oled/debug/no-mcuboot
 ```
 
 ## Package Contract

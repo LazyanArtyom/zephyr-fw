@@ -5,7 +5,7 @@ Recommended local checks:
 ```bash
 ./scripts/check_format.sh
 ./scripts/check_build_matrix.sh
-./scripts/package.sh --board esp32_oled --profile debug --boot no-mcuboot
+./scripts/package.sh build/esp32_oled/debug/no-mcuboot
 ```
 
 Optional heavier checks:
