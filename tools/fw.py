@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import pathlib
 import sys
 
@@ -205,8 +206,14 @@ def cmd_package(args: argparse.Namespace) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
+    manifest_file = package_dir / "manifest.json"
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
     print("Package created:")
     print(f"  {package_dir}")
+    print(f"  Build profile : {manifest.get('build_profile', 'unknown')}")
+    print(f"  Boot mode     : {manifest.get('boot_mode', 'unknown')}")
+    shell_enabled = manifest.get("runtime", {}).get("shell_enabled", False)
+    print(f"  Shell         : {'enabled' if shell_enabled else 'disabled'}")
     return 0
 
 

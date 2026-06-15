@@ -91,6 +91,9 @@ Build a production MCUboot image:
 ./scripts/build.sh --board esp32_oled --profile production --boot mcuboot
 ```
 
+Production builds are quiet field builds: the UART shell is disabled. Use
+`debug` or `release` when you need an interactive shell.
+
 Create a distributable package from a build directory under `dist/`:
 
 ```bash

@@ -271,6 +271,24 @@ def partition_summary(
     return "\n".join(lines) + "\n"
 
 
+def read_zephyr_config(config_file: pathlib.Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    if not config_file.is_file():
+        return values
+
+    for line in config_file.read_text(encoding="utf-8", errors="replace").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        values[key] = value.strip().strip('"')
+    return values
+
+
+def config_bool(config: dict[str, str], key: str) -> bool:
+    return config.get(key) == "y"
+
+
 def write_flash_helper(package_dir: pathlib.Path, board_profile: str, flash: dict[str, str]) -> None:
     del board_profile
     del flash
@@ -304,6 +322,7 @@ def create_package(options: PackageOptions) -> pathlib.Path:
 
     build_dir = options.build_dir or PROJECT_ROOT / "build" / options.board_profile / options.build_profile / options.boot_mode
     zephyr_dir = build_dir / "zephyr"
+    zephyr_config = read_zephyr_config(zephyr_dir / ".config")
     firmware_image = zephyr_dir / "zephyr.bin"
     if not build_dir.is_dir():
         raise PackageError(f"build directory not found: {build_dir}")
@@ -357,6 +376,12 @@ def create_package(options: PackageOptions) -> pathlib.Path:
         "git_commit": git_value(["rev-parse", "--short=12", "HEAD"], "unknown"),
         "git_dirty": git_dirty(),
         "created_utc": dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "runtime": {
+            "shell_enabled": config_bool(zephyr_config, "CONFIG_SHELL") and config_bool(zephyr_config, "CONFIG_FW_SHELL"),
+            "zephyr_shell_enabled": config_bool(zephyr_config, "CONFIG_SHELL"),
+            "firmware_shell_enabled": config_bool(zephyr_config, "CONFIG_FW_SHELL"),
+            "log_default_level": zephyr_config.get("CONFIG_LOG_DEFAULT_LEVEL", "unknown"),
+        },
         "flash": {
             "runner": flash["runner"],
             "chip": flash["chip"],
@@ -409,7 +434,8 @@ def create_package(options: PackageOptions) -> pathlib.Path:
         f"Board profile: {board.profile}\n"
         f"Zephyr board: {board.get('zephyr_board', 'unknown')}\n"
         f"Build profile: {options.build_profile}\n"
-        f"Boot mode: {options.boot_mode}\n\n"
+        f"Boot mode: {options.boot_mode}\n"
+        f"Shell: {'enabled' if manifest['runtime']['shell_enabled'] else 'disabled'}\n\n"
         "Primary image:\n"
         "  zephyr.bin\n\n"
         "Metadata:\n"

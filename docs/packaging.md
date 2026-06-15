@@ -10,7 +10,9 @@ Create packages from build directories:
 
 The build directory name is the package selector: `build/<board>/<profile>/<boot>`.
 When run interactively without arguments, `package.sh` lists available completed
-build directories and asks which one to package.
+build directories and asks which one to package. Production packages are expected
+to have the UART shell disabled; package output and `manifest.json` show the
+runtime shell status.
 
 `scripts/package.sh` is the stable packaging entry point. Package assembly,
 manifest generation, checksums, partition summaries, and production policy
