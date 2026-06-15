@@ -334,6 +334,7 @@ def resolved_flash_settings(board: BoardProfile) -> dict[str, str]:
         "chip": flash_conf.get("FLASH_CHIP") or board.get("flash_chip") or "esp32",
         "offset": flash_conf.get("FLASH_OFFSET") or board.get("flash_offset") or "0x1000",
         "baud": flash_conf.get("FLASH_BAUD") or "460800",
+        "serial_baud": board.get("serial_baud") or "115200",
         "mode": flash_conf.get("FLASH_MODE") or "dio",
         "freq": flash_conf.get("FLASH_FREQ") or "40m",
         "size": flash_conf.get("FLASH_SIZE") or "detect",

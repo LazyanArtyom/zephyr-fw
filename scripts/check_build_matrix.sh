@@ -3,7 +3,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-BOARD_PROFILES=("esp32_oled")
+mapfile -t BOARD_PROFILES < <("${PROJECT_ROOT}/tools/fw.py" boards list --names --enabled-only)
 BUILD_PROFILES=("debug" "release")
 BOOT_MODES=("no-mcuboot")
 BUILD_MODE="auto"
@@ -35,6 +35,11 @@ EOF
             ;;
     esac
 done
+
+if [[ ${#BOARD_PROFILES[@]} -eq 0 ]]; then
+    echo "No enabled board profiles found." >&2
+    exit 1
+fi
 
 for board in "${BOARD_PROFILES[@]}"; do
     for profile in "${BUILD_PROFILES[@]}"; do

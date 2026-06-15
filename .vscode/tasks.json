@@ -187,16 +187,16 @@
     {
       "label": "flash: esp32",
       "type": "shell",
-      "command": "${workspaceFolder}/scripts/flash_esp32.sh",
+      "command": "${workspaceFolder}/scripts/flash.sh",
       "args": [
         "--port",
-        "/dev/ttyUSB0",
-        "--board",
-        "esp32_oled",
-        "--profile",
-        "debug",
-        "--boot",
-        "no-mcuboot"
+        "${input:esp32SerialPort}",
+        "--image",
+        "${workspaceFolder}/build/esp32_oled/debug/no-mcuboot/zephyr/zephyr.bin",
+        "--chip",
+        "esp32",
+        "--offset",
+        "0x1000"
       ],
       "dependsOn": [
         "build: esp32 debug no-mcuboot"
@@ -210,7 +210,7 @@
       "args": [
         "-b",
         "115200",
-        "/dev/ttyUSB0"
+        "${input:esp32SerialPort}"
       ],
       "problemMatcher": []
     },
@@ -271,6 +271,14 @@
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "esp32SerialPort",
+      "type": "promptString",
+      "description": "Host serial port, for example /dev/cu.usbserial-11120 or /dev/ttyUSB0",
+      "default": "/dev/cu.usbserial-11120"
     }
   ]
 }

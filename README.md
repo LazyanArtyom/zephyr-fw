@@ -29,7 +29,9 @@ Artifact pattern: zephyr-fw_<version>_<board>_<profile>_<boot>
 Board profile:    esp32_oled
 Zephyr target:    esp32_oled/esp32/procpu
 Hardware:         ESP32-WROOM-32 class development board
-UART shell:       /dev/ttyUSB0 at 115200 baud
+UART shell:       host serial port at 115200 baud
+                  macOS example: /dev/cu.usbserial-11120
+                  Linux example: /dev/ttyUSB0
 Display:          SSD1306 128x64 OLED, I2C address 0x3c
 I2C pins:         SDA GPIO21, SCL GPIO22
 Settings:         NVS on the Zephyr storage partition
@@ -95,31 +97,56 @@ Create a distributable package under `dist/`:
 ./scripts/package.sh --board esp32_oled --profile debug --boot no-mcuboot
 ```
 
-Flash the current build:
+Programming is a host-side step. Build/package inside Docker if that is your
+Zephyr environment, then run programming commands from the macOS/Linux terminal
+that can see the USB serial device. Docker on macOS usually will not show
+`/dev/cu.*` devices without explicit USB passthrough.
+
+List likely serial ports on the host:
 
 ```bash
-./scripts/flash_esp32.sh --port /dev/ttyUSB0 --board esp32_oled --profile debug --boot no-mcuboot
+./scripts/flash.sh --list-ports
 ```
 
-Erase the ESP32 flash before programming:
+Flash from the package on macOS using the callout device:
 
 ```bash
-./scripts/flash_esp32.sh --port /dev/ttyUSB0 --erase
+cd dist/zephyr-fw_0.1.0_esp32_oled_debug_no-mcuboot
+./flash.sh --port /dev/cu.usbserial-11120
 ```
 
-Flash and attach the serial monitor:
+Flash from the package on Linux:
 
 ```bash
-./scripts/flash_esp32.sh --port /dev/ttyUSB0 --monitor
+cd dist/zephyr-fw_0.1.0_esp32_oled_debug_no-mcuboot
+./flash.sh --port /dev/ttyUSB0
 ```
 
-Open a serial monitor manually:
+Erase before flashing and attach a serial monitor:
+
+```bash
+./flash.sh --port /dev/cu.usbserial-11120 --erase --monitor
+```
+
+Flash a package without changing directories:
+
+```bash
+./scripts/flash.sh --package dist/zephyr-fw_0.1.0_esp32_oled_debug_no-mcuboot --port /dev/cu.usbserial-11120
+```
+
+Open a serial monitor manually on macOS:
+
+```bash
+screen /dev/cu.usbserial-11120 115200
+```
+
+Open a serial monitor manually on Linux:
 
 ```bash
 picocom -b 115200 /dev/ttyUSB0
 ```
 
-Exit `picocom` with `Ctrl-a`, then `Ctrl-x`.
+Exit `picocom` with `Ctrl-a`, then `Ctrl-x`. Detach `screen` with `Ctrl-a`, then `d`.
 
 ## Useful Commands
 
@@ -153,10 +180,10 @@ Run the configured build matrix:
 ./scripts/check_build_matrix.sh
 ```
 
-Smoke-test package generation:
+Create and validate a package:
 
 ```bash
-./scripts/check_package.sh esp32_oled debug no-mcuboot
+./scripts/package.sh --board esp32_oled --profile debug --boot no-mcuboot
 ```
 
 ## Package Contract

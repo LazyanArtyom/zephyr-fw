@@ -58,3 +58,18 @@ production.yml
 `manifest.json` is the single package metadata file. It records slot sizing,
 scratch policy, settings partition, signing key policy, rollback policy,
 factory reset behavior, and recovery process from the board production policy.
+
+## Host Programming
+
+Firmware packages are host-programmable. Build/package in Docker when needed,
+then run `flash.sh` from the macOS or Linux terminal that can see the USB serial
+device. On macOS, use the `/dev/cu.*` callout device for flashing.
+
+```bash
+./flash.sh --list-ports
+./flash.sh --port /dev/cu.usbserial-11120
+./flash.sh --port /dev/ttyUSB0 --erase --monitor
+```
+
+`flash.sh` uses `python3 -m esptool` by default. Pass `--python` or set
+`ESPTOOL_PYTHON` when esptool lives in a specific virtual environment.

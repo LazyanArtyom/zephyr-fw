@@ -68,3 +68,10 @@ Key meanings:
 | `Shift+F7` | Release MCUboot build and refresh `compile_commands.json` |
 
 Some keyboards require `Fn + Fx` depending on system settings.
+
+## Host Serial Port
+
+The flash task prompts for a host serial device. Use `/dev/cu.usbserial-*`
+on macOS and `/dev/ttyUSB*`, `/dev/ttyACM*`, or `/dev/serial/by-id/*` on Linux.
+Run `./scripts/flash.sh --list-ports` from the host terminal to see likely
+ports.

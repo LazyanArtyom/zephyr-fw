@@ -18,12 +18,21 @@ from firmware_package import PackageError, PackageOptions, create_package
 BOARDS_DIR = PROJECT_ROOT / "boards"
 
 
-def cmd_boards_list(_: argparse.Namespace) -> int:
+def cmd_boards_list(args: argparse.Namespace) -> int:
+    boards = list(iter_board_profiles())
+    if args.enabled_only:
+        boards = [board for board in boards if board.get("status", "unknown") == "enabled"]
+
+    if args.names:
+        for board in boards:
+            print(board.profile)
+        return 0
+
     print("Supported board profiles:")
     print()
 
     found = False
-    for board in iter_board_profiles():
+    for board in boards:
         found = True
         board_dir = board.board_dir
         zephyr_board = board.get("zephyr_board") or "not configured"
@@ -104,6 +113,8 @@ def main() -> int:
     boards_subcommands = boards_parser.add_subparsers(dest="boards_command", required=True)
 
     boards_list = boards_subcommands.add_parser("list")
+    boards_list.add_argument("--names", action="store_true", help="Print only board profile names")
+    boards_list.add_argument("--enabled-only", action="store_true", help="Only include enabled boards")
     boards_list.set_defaults(func=cmd_boards_list)
 
     boards_validate = boards_subcommands.add_parser("validate")

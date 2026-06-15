@@ -272,51 +272,15 @@ def partition_summary(
 
 
 def write_flash_helper(package_dir: pathlib.Path, board_profile: str, flash: dict[str, str]) -> None:
-    flash_sh = package_dir / "flash.sh"
-    if flash["runner"] != "esp32_esptool":
-        flash_sh.write_text(
-            "#!/usr/bin/env bash\n"
-            "set -euo pipefail\n"
-            f"echo \"No self-contained flash helper is available for board profile: {board_profile}\" >&2\n"
-            "exit 1\n",
-            encoding="utf-8",
-        )
-        flash_sh.chmod(0o755)
-        return
+    del board_profile
+    del flash
+    source = PROJECT_ROOT / "scripts" / "flash.sh"
+    if not source.is_file():
+        raise PackageError(f"flash helper source not found: {source}")
 
-    flash_sh.write_text(
-        "#!/usr/bin/env bash\n"
-        "set -euo pipefail\n\n"
-        "SCRIPT_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\"\n"
-        "PORT=\"${1:-}\"\n\n"
-        "if [[ -z \"${PORT}\" ]]; then\n"
-        "    echo \"Usage: $0 <serial_port>\"\n"
-        "    exit 1\n"
-        "fi\n\n"
-        "PYTHON=\"${ESPTOOL_PYTHON:-}\"\n"
-        "if [[ -z \"${PYTHON}\" ]]; then\n"
-        "    if [[ -x \"${HOME}/.venvs/esptool/bin/python\" ]]; then\n"
-        "        PYTHON=\"${HOME}/.venvs/esptool/bin/python\"\n"
-        "    else\n"
-        "        PYTHON=\"python3\"\n"
-        "    fi\n"
-        "fi\n\n"
-        "IMAGE=\"${SCRIPT_DIR}/zephyr.bin\"\n"
-        "if [[ -f \"${SCRIPT_DIR}/zephyr.signed.bin\" ]]; then\n"
-        "    IMAGE=\"${SCRIPT_DIR}/zephyr.signed.bin\"\n"
-        "fi\n\n"
-        "\"${PYTHON}\" -m esptool \\\n"
-        f"    --chip \"{flash['chip']}\" \\\n"
-        "    --port \"${PORT}\" \\\n"
-        f"    --baud \"{flash['baud']}\" \\\n"
-        "    write-flash \\\n"
-        f"    --flash-mode \"{flash['mode']}\" \\\n"
-        f"    --flash-freq \"{flash['freq']}\" \\\n"
-        f"    --flash-size \"{flash['size']}\" \\\n"
-        f"    \"{flash['offset']}\" \"${{IMAGE}}\"\n",
-        encoding="utf-8",
-    )
-    flash_sh.chmod(0o755)
+    destination = package_dir / "flash.sh"
+    shutil.copy2(source, destination)
+    destination.chmod(0o755)
 
 
 def create_package(options: PackageOptions) -> pathlib.Path:
@@ -398,6 +362,7 @@ def create_package(options: PackageOptions) -> pathlib.Path:
             "chip": flash["chip"],
             "offset": flash["offset"],
             "baud": flash["baud"],
+            "serial_baud": flash["serial_baud"],
             "mode": flash["mode"],
             "freq": flash["freq"],
             "size": flash["size"],
@@ -452,8 +417,9 @@ def create_package(options: PackageOptions) -> pathlib.Path:
         "  firmware.sha256\n"
         "  partition_summary.txt\n"
         "  production.yml\n\n"
-        "For ESP32 development flashing with esptool:\n"
-        "  ./flash.sh /dev/ttyUSB0\n"
+        "For ESP32 development flashing from the host OS:\n"
+        "  ./flash.sh --port /dev/cu.usbserial-11120\n"
+        "  ./flash.sh --port /dev/ttyUSB0\n"
     )
     (package_dir / "README.txt").write_text(readme, encoding="utf-8")
     write_flash_helper(package_dir, board.profile, flash)
