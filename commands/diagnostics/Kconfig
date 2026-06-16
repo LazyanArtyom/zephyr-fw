@@ -1,0 +1,13 @@
+config FW_CMD_DIAGNOSTICS
+    bool "Enable diagnostics commands"
+    default y
+    depends on FW_SHELL && FW_SERVICE_DIAGNOSTICS
+    help
+      Enables project-owned diagnostics shell commands:
+
+        diag status
+        diag crash
+        diag reset-cause
+        diag threads
+        diag stacks
+        diag clear

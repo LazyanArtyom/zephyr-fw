@@ -5,6 +5,7 @@ rsource "fw/Kconfig"
 rsource "board/Kconfig"
 rsource "system/Kconfig"
 rsource "health/Kconfig"
+rsource "diagnostics/Kconfig"
 rsource "settings/Kconfig"
 rsource "i2cdetect/Kconfig"
 

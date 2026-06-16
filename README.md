@@ -248,6 +248,12 @@ board hw-rev set <value>
 system uptime
 system reset-reason
 system reboot
+diag status
+diag crash
+diag reset-cause
+diag threads
+diag stacks
+diag clear
 settings list [subtree]
 settings get <key>
 settings set <key> <value>
@@ -276,6 +282,7 @@ docs/architecture.md
 docs/build_system.md
 docs/board_porting.md
 docs/boot_modes.md
+docs/diagnostics.md
 docs/display.md
 docs/logging.md
 docs/mcuboot.md

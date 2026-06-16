@@ -17,4 +17,8 @@ module = FW_SERVICE_HEALTH_HEARTBEAT
 module-str = services/health heartbeat
 source "subsys/logging/Kconfig.template.log_config"
 
+module = FW_SERVICE_DIAGNOSTICS
+module-str = services/diagnostics
+source "subsys/logging/Kconfig.template.log_config"
+
 endmenu

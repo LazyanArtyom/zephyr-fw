@@ -11,9 +11,25 @@ class ResetInfo final {
    public:
     enum class Reason : std::uint8_t {
         kUnknown = 0,
+        kPin,
+        kSoftware,
+        kBrownout,
+        kPowerOn,
+        kWatchdog,
+        kDebug,
+        kSecurity,
+        kLowPowerWake,
+        kCpuLockup,
+        kHardware,
+        kUser,
+        kTemperature,
+        kBootloader,
+        kFlash,
     };
 
-    constexpr explicit ResetInfo(Reason reason = Reason::kUnknown) : reason_(reason) {}
+    constexpr explicit ResetInfo(Reason reason = Reason::kUnknown, std::uint32_t flags = 0,
+                                 bool available = false)
+        : reason_(reason), flags_(flags), available_(available) {}
 
     [[nodiscard]] static ResetInfo Current();
     static void RequestColdReboot();
@@ -21,10 +37,18 @@ class ResetInfo final {
     [[nodiscard]] constexpr Reason reason() const {
         return reason_;
     }
+    [[nodiscard]] constexpr std::uint32_t flags() const {
+        return flags_;
+    }
+    [[nodiscard]] constexpr bool available() const {
+        return available_;
+    }
     [[nodiscard]] StringView reason_text() const;
 
    private:
     Reason reason_{Reason::kUnknown};
+    std::uint32_t flags_{0};
+    bool available_{false};
 };
 
 }  // namespace platform

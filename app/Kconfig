@@ -14,6 +14,24 @@ config FW_DISPLAY
     default n
     depends on DISPLAY && CHARACTER_FRAMEBUFFER
 
+config FW_SERVICE_DIAGNOSTICS
+    bool "Enable persistent diagnostics service"
+    default y
+    depends on SETTINGS
+    select HWINFO
+    help
+      Stores boot, reset, firmware, and fatal crash metadata in persistent
+      settings so the next boot can explain what happened before reset.
+
+config FW_SERVICE_DIAGNOSTICS_REBOOT_ON_FATAL
+    bool "Reboot after capturing fatal diagnostics"
+    default y
+    depends on FW_SERVICE_DIAGNOSTICS
+    select REBOOT
+    help
+      Capture a compact fatal marker in noinit RAM, flush logs, and cold reboot.
+      The next boot persists the fatal reason into settings.
+
 rsource "logging/Kconfig"
 
 endmenu

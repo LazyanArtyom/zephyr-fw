@@ -54,6 +54,7 @@ Product services:
 
 ```text
 services/display/
+services/diagnostics/
 services/factory_reset/
 services/health/
 services/manufacturing/
@@ -65,6 +66,7 @@ Shell command modules:
 ```text
 commands/board/
 commands/fw/
+commands/diagnostics/
 commands/health/
 commands/settings/
 commands/system/

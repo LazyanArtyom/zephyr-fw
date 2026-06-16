@@ -10,6 +10,10 @@
 #include <platform/settings/settings_store.h>
 #endif
 
+#if defined(CONFIG_FW_SERVICE_DIAGNOSTICS)
+#include <services/diagnostics/diagnostics_service.h>
+#endif
+
 LOG_MODULE_REGISTER(app_main, CONFIG_FW_APP_MAIN_LOG_LEVEL);
 
 int main() {
@@ -22,6 +26,16 @@ int main() {
     if (!settings_status.ok()) {
         LOG_ERR("Settings load failed: %s (%s)", platform::ToString(settings_status.code()).c_str(),
                 settings_status.message().c_str());
+    }
+#endif
+
+#if defined(CONFIG_FW_SERVICE_DIAGNOSTICS)
+    const platform::Status diagnostics_status =
+        services::diagnostics::DiagnosticsService::Initialize();
+    if (!diagnostics_status.ok()) {
+        LOG_ERR("Diagnostics initialization failed: %s (%s)",
+                platform::ToString(diagnostics_status.code()).c_str(),
+                diagnostics_status.message().c_str());
     }
 #endif
 

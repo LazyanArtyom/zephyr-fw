@@ -29,6 +29,12 @@ board hw-rev set <value>
 system uptime
 system reset-reason
 system reboot
+diag status
+diag crash
+diag reset-cause
+diag threads
+diag stacks
+diag clear
 settings list [subtree]
 settings get <key>
 settings set <key> <value>
