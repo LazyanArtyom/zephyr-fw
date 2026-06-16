@@ -294,6 +294,11 @@ else
 fi
 
 ASSERTS_MODE="off"
+if [[ "${BUILD_PROFILE}" == "debug" || "${BUILD_PROFILE}" == "service" ]]; then
+    DIAGNOSTICS_MODE="on"
+else
+    DIAGNOSTICS_MODE="off"
+fi
 
 BUILD_DIR="${PROJECT_ROOT}/build/${BOARD_PROFILE}/${BUILD_PROFILE}/${BOOT_MODE}"
 GENERATED_CONF_DIR="${PROJECT_ROOT}/build/generated-configs/${BOARD_PROFILE}/${BUILD_PROFILE}/${BOOT_MODE}"
@@ -334,6 +339,9 @@ if [[ "${SHELL_MODE}" == "on" ]]; then
     add_conf_if_exists "${GENERATED_SHELL_PROMPT_CONF}"
 else
     add_conf_if_exists "${PROJECT_ROOT}/configs/features/no_shell.conf"
+fi
+if [[ "${DIAGNOSTICS_MODE}" == "on" ]]; then
+    add_conf_if_exists "${PROJECT_ROOT}/configs/features/diagnostics.conf"
 fi
 add_conf_if_exists "${PROJECT_ROOT}/configs/features/no_asserts.conf"
 
@@ -390,6 +398,7 @@ echo "Display        : ${DISPLAY_MODE} (from metadata.yml)"
 echo "Settings       : ${SETTINGS_MODE} (from metadata.yml)"
 echo "Shell          : ${SHELL_MODE} (profile policy)"
 echo "Asserts        : ${ASSERTS_MODE} (profile policy)"
+echo "Diagnostics    : ${DIAGNOSTICS_MODE} (profile policy)"
 echo "Build dir      : ${BUILD_DIR}"
 echo "Conf files     : ${CONF_FILE_ARG}"
 if [[ -f "${BOARD_OVERLAY}" ]]; then

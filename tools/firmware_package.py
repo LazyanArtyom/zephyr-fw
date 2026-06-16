@@ -381,6 +381,14 @@ def create_package(options: PackageOptions) -> pathlib.Path:
             "zephyr_shell_enabled": config_bool(zephyr_config, "CONFIG_SHELL"),
             "firmware_shell_enabled": config_bool(zephyr_config, "CONFIG_FW_SHELL"),
             "log_default_level": zephyr_config.get("CONFIG_LOG_DEFAULT_LEVEL", "unknown"),
+            "log_runtime_filtering": config_bool(zephyr_config, "CONFIG_LOG_RUNTIME_FILTERING"),
+            "log_printk": config_bool(zephyr_config, "CONFIG_LOG_PRINTK"),
+            "log_shell_commands": config_bool(zephyr_config, "CONFIG_LOG_CMDS"),
+            "diagnostics_enabled": config_bool(zephyr_config, "CONFIG_THREAD_ANALYZER")
+            or config_bool(zephyr_config, "CONFIG_DEBUG_COREDUMP"),
+            "thread_analyzer": config_bool(zephyr_config, "CONFIG_THREAD_ANALYZER"),
+            "coredump": config_bool(zephyr_config, "CONFIG_DEBUG_COREDUMP"),
+            "coredump_shell": config_bool(zephyr_config, "CONFIG_DEBUG_COREDUMP_SHELL"),
         },
         "flash": {
             "runner": flash["runner"],

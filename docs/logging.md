@@ -8,10 +8,10 @@ messages through the logging subsystem when logging is running.
 ## Build Profiles
 
 ```text
-debug:      compile debug logs, start runtime filtering at info
-release:    compile warning/error logs by default, allow selected modules at info
-production: emit errors by default, compile warnings only where modules opt in
-service:    controlled support image with shell and verbose runtime logging
+debug:      developer bring-up; diagnostics enabled; runtime logs start at info
+release:    warning/error logs by default, no crash-forensics bundle
+production: quiet field image; error logs by default, shell off
+service:    production-like support image; diagnostics and shell enabled
 ```
 
 Normal builds use deferred logging:
@@ -106,3 +106,16 @@ restore the level before collecting final logs
 Do not make production images verbose just to debug a field issue. Build a
 `service` image instead, or enable one specific module level through Kconfig for
 a controlled diagnostic build.
+
+## Debug vs Service
+
+`debug` and `service` both include `configs/features/diagnostics.conf`, but they
+answer different questions. Use `debug` while developing because it enables
+compiler/debug behavior intended for bring-up. Use `service` when you need a
+controlled support image that behaves closer to production while keeping shell,
+runtime log control, thread analysis, Xtensa panic backtraces, and coredump logging
+available.
+
+Normal production firmware should still keep error logging enabled. It should
+not expose a UART shell or dump RAM by default unless the product security policy
+explicitly allows that for a specific service build.

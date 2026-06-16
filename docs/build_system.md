@@ -68,9 +68,10 @@ or profile fragment enables them earlier in the config order.
 
 ## Service Diagnostics Profile
 
-Use `--profile service` for controlled support images. It keeps the interactive
-shell and verbose runtime logging available while avoiding normal production
-field defaults.
+Use `--profile service` for controlled support images. It keeps production-like
+optimization/debug policy while adding the interactive shell, runtime log
+control, thread analysis, Xtensa panic backtraces, and coredump logging through
+`configs/features/diagnostics.conf`.
 
 ```bash
 ./scripts/build.sh --board esp32_oled --profile service --boot no-mcuboot

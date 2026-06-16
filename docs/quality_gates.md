@@ -23,6 +23,7 @@ CI should run at least:
 format check
 debug no-MCUboot build
 release no-MCUboot build
+service diagnostics build
 package generation
 metadata/checksum verification
 ```

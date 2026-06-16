@@ -91,14 +91,14 @@ Build a production MCUboot image:
 ./scripts/build.sh --board esp32_oled --profile production --boot mcuboot
 ```
 
-Build a service diagnostics image with the shell and verbose runtime logging:
+Build a service diagnostics image with production-like optimization, shell access, verbose runtime logging, thread analysis, and coredump logging:
 
 ```bash
 ./scripts/build.sh --board esp32_oled --profile service --boot no-mcuboot
 ```
 
 Production builds are quiet field builds: the UART shell is disabled. Use
-`debug`, `release`, or `service` when you need an interactive shell.
+`debug` for developer bring-up and `service` for controlled support diagnostics when you need an interactive shell.
 
 Create a distributable package from a build directory under `dist/`:
 
