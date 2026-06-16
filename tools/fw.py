@@ -63,6 +63,7 @@ def cmd_boards_list(args: argparse.Namespace) -> int:
     print("  ./scripts/build.sh --board esp32_oled --profile debug")
     print("  ./scripts/build.sh --board esp32_oled --profile release --mode incremental")
     print("  ./scripts/build.sh --board esp32_oled --profile production --boot mcuboot")
+    print("  ./scripts/build.sh --board esp32_oled --profile service --boot no-mcuboot")
     return 0
 
 
@@ -243,7 +244,8 @@ def main() -> int:
             "Examples:\n"
             "  ./scripts/package.sh build/esp32_oled/production/no-mcuboot\n"
             "  ./scripts/package.sh build/esp32_oled/debug/mcuboot\n"
-            "  ./scripts/package.sh --board esp32_oled --profile production --boot mcuboot"
+            "  ./scripts/package.sh --board esp32_oled --profile production --boot mcuboot\n"
+            "  ./scripts/package.sh --board esp32_oled --profile service --boot no-mcuboot"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

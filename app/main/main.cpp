@@ -10,7 +10,7 @@
 #include <platform/settings/settings_store.h>
 #endif
 
-LOG_MODULE_REGISTER(app_main, CONFIG_LOG_DEFAULT_LEVEL);
+LOG_MODULE_REGISTER(app_main, CONFIG_FW_APP_MAIN_LOG_LEVEL);
 
 int main() {
     const platform::BoardInfo& board_info = platform::BoardInfo::Current();

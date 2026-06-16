@@ -6,7 +6,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 usage() {
     cat <<EOF
 Usage:
-  $0 --board <profile> [--profile debug|release|production] [--boot no-mcuboot|mcuboot]
+  $0 --board <profile> [--profile debug|release|production|service] [--boot no-mcuboot|mcuboot]
 
 Options:
   --board <profile>       Board profile (default: esp32_oled)

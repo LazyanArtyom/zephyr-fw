@@ -1,0 +1,20 @@
+menu "Firmware Logging"
+    depends on LOG
+
+module = FW_APP_MAIN
+module-str = app/main
+source "subsys/logging/Kconfig.template.log_config"
+
+module = FW_PLATFORM_BOARD
+module-str = platform/board
+source "subsys/logging/Kconfig.template.log_config"
+
+module = FW_SERVICE_DISPLAY
+module-str = services/display
+source "subsys/logging/Kconfig.template.log_config"
+
+module = FW_SERVICE_HEALTH_HEARTBEAT
+module-str = services/health heartbeat
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu

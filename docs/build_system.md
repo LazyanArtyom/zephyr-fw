@@ -65,3 +65,13 @@ and application selections in `configs/features/`. Always-on application default
 including logging backend defaults, belong in `prj.conf`. The `no_*` fragments are kept
 so metadata-selected features can be disabled deterministically even when a board
 or profile fragment enables them earlier in the config order.
+
+## Service Diagnostics Profile
+
+Use `--profile service` for controlled support images. It keeps the interactive
+shell and verbose runtime logging available while avoiding normal production
+field defaults.
+
+```bash
+./scripts/build.sh --board esp32_oled --profile service --boot no-mcuboot
+```

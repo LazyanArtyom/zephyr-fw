@@ -3,7 +3,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/version.h>
 
-LOG_MODULE_REGISTER(platform_board_info, CONFIG_LOG_DEFAULT_LEVEL);
+LOG_MODULE_REGISTER(platform_board_info, CONFIG_FW_PLATFORM_BOARD_LOG_LEVEL);
 
 namespace {
 

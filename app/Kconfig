@@ -14,4 +14,6 @@ config FW_DISPLAY
     default n
     depends on DISPLAY && CHARACTER_FRAMEBUFFER
 
+rsource "logging/Kconfig"
+
 endmenu

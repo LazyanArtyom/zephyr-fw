@@ -14,6 +14,10 @@ while [[ $# -gt 0 ]]; do
             BUILD_PROFILES+=("production")
             shift
             ;;
+        --include-service)
+            BUILD_PROFILES+=("service")
+            shift
+            ;;
         --include-mcuboot)
             BOOT_MODES+=("mcuboot")
             shift
@@ -25,7 +29,7 @@ while [[ $# -gt 0 ]]; do
         --help|-h)
             cat <<EOF
 Usage:
-  $0 [--include-production] [--include-mcuboot] [--mode auto|clean|incremental]
+  $0 [--include-production] [--include-service] [--include-mcuboot] [--mode auto|clean|incremental]
 EOF
             exit 0
             ;;

@@ -12,6 +12,7 @@ Optional heavier checks:
 
 ```bash
 ./scripts/check_build_matrix.sh --include-production
+./scripts/check_build_matrix.sh --include-service
 ./scripts/check_build_matrix.sh --include-production --include-mcuboot
 ./scripts/run-clang-tidy.sh build/esp32_oled/debug/no-mcuboot
 ```

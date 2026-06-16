@@ -5,7 +5,7 @@
 #include <zephyr/display/cfb.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(display_service, CONFIG_LOG_DEFAULT_LEVEL);
+LOG_MODULE_REGISTER(display_service, CONFIG_FW_SERVICE_DISPLAY_LOG_LEVEL);
 
 namespace services::display {
 namespace {

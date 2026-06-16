@@ -23,7 +23,7 @@ from board_metadata import (
 
 
 PACKAGE_COMPONENT_RE = re.compile(r"^[A-Za-z0-9._+-]+$")
-VALID_BUILD_PROFILES = ("debug", "release", "production")
+VALID_BUILD_PROFILES = ("debug", "release", "production", "service")
 VALID_BOOT_MODES = ("no-mcuboot", "mcuboot")
 
 

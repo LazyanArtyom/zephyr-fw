@@ -91,8 +91,14 @@ Build a production MCUboot image:
 ./scripts/build.sh --board esp32_oled --profile production --boot mcuboot
 ```
 
+Build a service diagnostics image with the shell and verbose runtime logging:
+
+```bash
+./scripts/build.sh --board esp32_oled --profile service --boot no-mcuboot
+```
+
 Production builds are quiet field builds: the UART shell is disabled. Use
-`debug` or `release` when you need an interactive shell.
+`debug`, `release`, or `service` when you need an interactive shell.
 
 Create a distributable package from a build directory under `dist/`:
 
@@ -218,10 +224,16 @@ MCUboot packages also include signed/update/bootloader artifacts when Zephyr
 produces them. Packaging rejects builds whose generated partition table
 disagrees with the board `production.yml`.
 
+## Logging
+
+Application code uses Zephyr logging through per-module `LOG_MODULE_REGISTER`
+entries and Kconfig-controlled module levels. Shell-enabled builds also expose
+Zephyr's `log` command for runtime filtering. See `docs/logging.md`.
+
 ## Shell Commands
 
-The debug and release profiles enable the UART shell by default. Production
-turns it off unless a board profile explicitly enables it.
+The debug, release, and service profiles enable the UART shell by default.
+Production turns it off unless a board profile explicitly enables it.
 
 ```text
 fw info
@@ -265,6 +277,7 @@ docs/build_system.md
 docs/board_porting.md
 docs/boot_modes.md
 docs/display.md
+docs/logging.md
 docs/mcuboot.md
 docs/packaging.md
 docs/peripherals.md

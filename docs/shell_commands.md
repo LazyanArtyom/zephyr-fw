@@ -10,8 +10,8 @@ configs/features/no_shell.conf
 Default behavior:
 
 ```text
-debug/release: shell on
-production:    shell off
+debug/release/service: shell on
+production:            shell off
 ```
 
 Commands:
@@ -55,3 +55,7 @@ display/*
 ```
 
 The shell prompt is generated from `project.env` by `scripts/build.sh`.
+
+Zephyr logging shell commands are enabled in shell builds through
+`CONFIG_LOG_CMDS=y`. Use `log help` on the target to inspect runtime log-level
+controls for the Zephyr version in use.

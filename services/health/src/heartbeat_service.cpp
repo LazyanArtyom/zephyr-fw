@@ -3,7 +3,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(heartbeat_service, CONFIG_LOG_DEFAULT_LEVEL);
+LOG_MODULE_REGISTER(heartbeat_service, CONFIG_FW_SERVICE_HEALTH_HEARTBEAT_LOG_LEVEL);
 
 namespace services::health {
 namespace {

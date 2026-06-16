@@ -10,11 +10,11 @@ usage() {
     cat <<EOF
 Usage:
   $0 --board <profile> [options]
-  $0 <profile> [debug|release|production] [auto|clean|pristine|incremental|no]
+  $0 <profile> [debug|release|production|service] [auto|clean|pristine|incremental|no]
 
 Options:
   --board, -b <profile>       Board profile from boards/<vendor>/<board>/metadata.yml
-  --profile, -p <profile>     Build profile: debug, release, production (default: debug)
+  --profile, -p <profile>     Build profile: debug, release, production, service (default: debug)
   --mode, -m <mode>           Build mode: auto, clean, pristine, incremental, no (default: auto)
   --boot <mode>               Boot mode: no-mcuboot, mcuboot (default: metadata.yml)
   --list-boards               Show available board profiles
@@ -23,6 +23,7 @@ Options:
 Examples:
   $0 --board esp32_oled --profile debug --boot no-mcuboot
   $0 --board esp32_oled --profile production --boot mcuboot
+  $0 --board esp32_oled --profile service --boot no-mcuboot
   $0 esp32_oled debug incremental
 EOF
 }
@@ -224,12 +225,12 @@ fi
 BOOT_MODE="${BOOT_MODE:-${DEFAULT_BOOT:-no-mcuboot}}"
 
 case "${BUILD_PROFILE}" in
-    debug|release|production)
+    debug|release|production|service)
         PROFILE_CONF="${PROJECT_ROOT}/configs/profiles/${BUILD_PROFILE}.conf"
         [[ -f "${PROFILE_CONF}" ]] || die "profile config not found: ${PROFILE_CONF}"
         ;;
     *)
-        die "unknown build profile: ${BUILD_PROFILE} (valid: debug, release, production)"
+        die "unknown build profile: ${BUILD_PROFILE} (valid: debug, release, production, service)"
         ;;
 esac
 
