@@ -1,27 +1,17 @@
-#include <errno.h>
 #include <platform/settings/settings_store.h>
 #include <platform/shell/console.h>
 #include <zephyr/shell/shell.h>
 
 namespace {
 
-int PrintUsage(const platform::shell::Console& output) {
-    output.line("Usage:");
-    output.line("  settings list [subtree]");
-    output.line("  settings get <key>");
-    output.line("  settings set <key> <value>");
-    output.line("  settings reset <key>");
-    output.line("  settings save");
-    output.line("  settings load");
-    return 0;
-}
-
 platform::Status PrintSettingKey(platform::StringView key, void* context) {
     static_cast<const platform::shell::Console*>(context)->line(key);
     return platform::Status::Ok();
 }
 
-int CmdList(const platform::shell::Console& output, const platform::shell::Arguments& arguments) {
+int CmdList(const shell* shell, size_t argc, char** argv) {
+    const platform::shell::Console output(shell);
+    const platform::shell::Arguments arguments(argc, argv);
     const platform::StringView subtree =
         arguments.size() >= 3 ? arguments.at(2) : platform::StringView{};
     const platform::Status status = platform::SettingsStore::List(
@@ -32,11 +22,9 @@ int CmdList(const platform::shell::Console& output, const platform::shell::Argum
     return 0;
 }
 
-int CmdGet(const platform::shell::Console& output, const platform::shell::Arguments& arguments) {
-    if (arguments.size() != 3) {
-        return PrintUsage(output);
-    }
-
+int CmdGet(const shell* shell, size_t argc, char** argv) {
+    const platform::shell::Console output(shell);
+    const platform::shell::Arguments arguments(argc, argv);
     const platform::Result<platform::SettingValue> value =
         platform::SettingsStore::GetString(arguments.at(2));
     if (!value.ok()) {
@@ -47,11 +35,9 @@ int CmdGet(const platform::shell::Console& output, const platform::shell::Argume
     return 0;
 }
 
-int CmdSet(const platform::shell::Console& output, const platform::shell::Arguments& arguments) {
-    if (arguments.size() != 4) {
-        return PrintUsage(output);
-    }
-
+int CmdSet(const shell* shell, size_t argc, char** argv) {
+    const platform::shell::Console output(shell);
+    const platform::shell::Arguments arguments(argc, argv);
     const platform::Status status =
         platform::SettingsStore::SetString(arguments.at(2), arguments.at(3));
     if (!status.ok()) {
@@ -62,11 +48,9 @@ int CmdSet(const platform::shell::Console& output, const platform::shell::Argume
     return 0;
 }
 
-int CmdReset(const platform::shell::Console& output, const platform::shell::Arguments& arguments) {
-    if (arguments.size() != 3) {
-        return PrintUsage(output);
-    }
-
+int CmdReset(const shell* shell, size_t argc, char** argv) {
+    const platform::shell::Console output(shell);
+    const platform::shell::Arguments arguments(argc, argv);
     const platform::Status status = platform::SettingsStore::Reset(arguments.at(2));
     if (!status.ok()) {
         return platform::shell::PrintStatusError(output, "settings reset failed", status);
@@ -76,7 +60,11 @@ int CmdReset(const platform::shell::Console& output, const platform::shell::Argu
     return 0;
 }
 
-int CmdSave(const platform::shell::Console& output) {
+int CmdSave(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    const platform::shell::Console output(shell);
     const platform::Status status = platform::SettingsStore::Save();
     if (!status.ok()) {
         return platform::shell::PrintStatusError(output, "settings save failed", status);
@@ -85,7 +73,11 @@ int CmdSave(const platform::shell::Console& output) {
     return 0;
 }
 
-int CmdLoad(const platform::shell::Console& output) {
+int CmdLoad(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    const platform::shell::Console output(shell);
     const platform::Status status = platform::SettingsStore::Load();
     if (!status.ok()) {
         return platform::shell::PrintStatusError(output, "settings load failed", status);
@@ -94,38 +86,15 @@ int CmdLoad(const platform::shell::Console& output) {
     return 0;
 }
 
-int CmdSettings(const shell* shell, size_t argc, char** argv) {
-    const platform::shell::Console output(shell);
-    const platform::shell::Arguments arguments(argc, argv);
-
-    if (arguments.size() < 2 || arguments.at(1).equals("--help") || arguments.at(1).equals("-h")) {
-        return PrintUsage(output);
-    }
-
-    const platform::StringView command = arguments.at(1);
-    if (command.equals("list")) {
-        return CmdList(output, arguments);
-    }
-    if (command.equals("get")) {
-        return CmdGet(output, arguments);
-    }
-    if (command.equals("set")) {
-        return CmdSet(output, arguments);
-    }
-    if (command.equals("reset")) {
-        return CmdReset(output, arguments);
-    }
-    if (command.equals("save")) {
-        return CmdSave(output);
-    }
-    if (command.equals("load")) {
-        return CmdLoad(output);
-    }
-
-    output.error_value("unknown settings command", command);
-    return -EINVAL;
-}
-
 }  // namespace
 
-SHELL_CMD_ARG_REGISTER(settings, NULL, "Persistent settings commands.", CmdSettings, 1, 4);
+SHELL_STATIC_SUBCMD_SET_CREATE(settings_subcommands,
+                               SHELL_CMD_ARG(list, NULL, "List settings keys.", CmdList, 2, 1),
+                               SHELL_CMD_ARG(get, NULL, "Read a setting.", CmdGet, 3, 0),
+                               SHELL_CMD_ARG(set, NULL, "Write a setting.", CmdSet, 4, 0),
+                               SHELL_CMD_ARG(reset, NULL, "Reset a setting.", CmdReset, 3, 0),
+                               SHELL_CMD(save, NULL, "Save settings.", CmdSave),
+                               SHELL_CMD(load, NULL, "Load settings.", CmdLoad),
+                               SHELL_SUBCMD_SET_END);
+
+SHELL_CMD_REGISTER(settings, &settings_subcommands, "Persistent settings commands.", NULL);

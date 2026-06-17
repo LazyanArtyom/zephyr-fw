@@ -1,5 +1,6 @@
 #include <platform/board/board_info.h>
 #include <services/health/heartbeat_service.h>
+#include <services/watchdog/watchdog_service.h>
 #include <zephyr/logging/log.h>
 
 #if defined(CONFIG_FW_DISPLAY)
@@ -36,6 +37,15 @@ int main() {
         LOG_ERR("Diagnostics initialization failed: %s (%s)",
                 platform::ToString(diagnostics_status.code()).c_str(),
                 diagnostics_status.message().c_str());
+    }
+#endif
+
+#if defined(CONFIG_FW_SERVICE_WATCHDOG)
+    const platform::Status watchdog_status = services::watchdog::WatchdogService::Initialize();
+    if (!watchdog_status.ok()) {
+        LOG_ERR("Watchdog initialization failed: %s (%s)",
+                platform::ToString(watchdog_status.code()).c_str(),
+                watchdog_status.message().c_str());
     }
 #endif
 

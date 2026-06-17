@@ -44,6 +44,27 @@ from the host path.
 
 It also strips Zephyr SDK flags that host clangd/clang-tidy do not understand.
 
+## Known Analyzer Limitations
+
+Zephyr and ESP-IDF headers use dense macro layers for devicetree, logging, SoC
+registers, and Xtensa-specific compiler behavior. Host clangd/clang-tidy can
+misread those macro expansions even when the firmware builds correctly with the
+Zephyr SDK.
+
+Project policy is to keep Zephyr logging and devicetree APIs in application
+code. Do not make firmware code less idiomatic just to satisfy a host analyzer
+false positive from Zephyr internals. Prefer one of these fixes instead:
+
+- tune `.clangd` or `.clang-tidy` for known macro false positives
+- keep `HeaderFilterRegex` scoped to project code
+- fix the compile database export script when an SDK flag confuses host clang
+- add a narrow `NOLINT` only when the warning is in project code and understood
+
+Current intentionally disabled checks include Zephyr-macro-prone bugprone
+checks for macro parentheses, reserved identifiers, sizeof expressions, logging
+macro arithmetic, and a few broad style-only checks that conflict with the
+existing firmware/Zephyr API style.
+
 ## Hotkeys
 
 VS Code keybindings are user-profile settings. Open `Preferences: Open Keyboard

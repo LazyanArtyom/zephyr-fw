@@ -45,6 +45,7 @@ health status
 health storage info
 health factory reset
 health watchdog status
+health watchdog feed
 i2cdetect -r -y 0
 i2cdetect -y i2c0
 i2cdetect -a -r -y 0
@@ -64,4 +65,5 @@ The shell prompt is generated from `project.env` by `scripts/build.sh`.
 
 Zephyr logging shell commands are enabled in shell builds through
 `CONFIG_LOG_CMDS=y`. Use `log help` on the target to inspect runtime log-level
-controls for the Zephyr version in use.
+controls for the Zephyr version in use. Zephyr kernel shell commands are limited
+to diagnostics builds through `configs/features/diagnostics.conf`.

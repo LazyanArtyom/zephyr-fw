@@ -21,4 +21,8 @@ module = FW_SERVICE_DIAGNOSTICS
 module-str = services/diagnostics
 source "subsys/logging/Kconfig.template.log_config"
 
+module = FW_SERVICE_WATCHDOG
+module-str = services/watchdog
+source "subsys/logging/Kconfig.template.log_config"
+
 endmenu

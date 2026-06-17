@@ -216,16 +216,49 @@ run_single_file() {
     local tidy_dir="$1"
     local file_path="$2"
     local header_filter
+    local tidy_output
+    local filtered_output
+    local tidy_rc
 
     header_filter="^${PROJECT_ROOT}/(app|commands|platform|services|tests)/"
+    tidy_output="$(mktemp "${TMPDIR:-/tmp}/zephyr-fw-clang-tidy-output.XXXXXX")"
 
+    set +e
     clang-tidy \
         "${file_path}" \
         -p "${tidy_dir}" \
         "--config-file=${PROJECT_ROOT}/.clang-tidy" \
         "--header-filter=${header_filter}" \
-        2>&1 \
-        | sed -E '/^[0-9]+ warnings generated\.$/d; /^Suppressed [0-9]+ warnings .*$/d; /^Use -header-filter=.*$/d; /^Found compiler error\(s\)\.$/d'
+        >"${tidy_output}" 2>&1
+    tidy_rc=$?
+    set -e
+
+    filtered_output="$(sed -E \
+        -e '/^[0-9]+ warnings generated\.$/d' \
+        -e '/^[0-9]+ warnings and [0-9]+ errors? generated\.$/d' \
+        -e '/^Suppressed [0-9]+ warnings .*$/d' \
+        -e '/^Use -header-filter=.*$/d' \
+        -e '/^Found compiler error\(s\)\.$/d' \
+        -e '/^Error while processing .*$/d' \
+        -e '/invalid output constraint '\''=a'\'' in asm \[clang-diagnostic-error\]/d' \
+        -e '/field designator '\''xtensa_padding'\'' does not refer to any field/d' \
+        -e '/\/opt\/zephyrproject\/zephyr\/include\/zephyr\/(arch\/xtensa|logging|sys\/cbprintf)/d' \
+        -e '/^note: expanded from macro/d' \
+        -e '/^note: \(skipping /d' \
+        -e '/^[[:space:]]*[0-9]+ \|/d' \
+        -e '/^[[:space:]]*\|/d' \
+        "${tidy_output}")"
+    rm -f "${tidy_output}"
+
+    if [[ -n "${filtered_output}" ]]; then
+        printf '%s\n' "${filtered_output}"
+    fi
+
+    if ((tidy_rc != 0)) && grep -Eq '(^|: )[Ee]rror:' <<<"${filtered_output}"; then
+        return "${tidy_rc}"
+    fi
+
+    return 0
 }
 
 main() {

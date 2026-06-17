@@ -43,6 +43,12 @@ class ResetInfo final {
     [[nodiscard]] constexpr bool available() const {
         return available_;
     }
+    [[nodiscard]] constexpr bool is_watchdog() const {
+        return reason_ == Reason::kWatchdog;
+    }
+    [[nodiscard]] constexpr bool is_cpu_fault() const {
+        return reason_ == Reason::kCpuLockup;
+    }
     [[nodiscard]] StringView reason_text() const;
 
    private:

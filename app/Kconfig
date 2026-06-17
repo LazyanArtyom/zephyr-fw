@@ -32,6 +32,34 @@ config FW_SERVICE_DIAGNOSTICS_REBOOT_ON_FATAL
       Capture a compact fatal marker in noinit RAM, flush logs, and cold reboot.
       The next boot persists the fatal reason into settings.
 
+config FW_SERVICE_WATCHDOG
+    bool "Enable watchdog service"
+    default n
+    select WATCHDOG
+    help
+      Initializes the board watchdog, feeds it from a system work item, and
+      allows application tasks to register supervision deadlines.
+
+config FW_SERVICE_WATCHDOG_TIMEOUT_MS
+    int "Watchdog timeout in milliseconds"
+    default 10000
+    range 1000 600000
+    depends on FW_SERVICE_WATCHDOG
+
+config FW_SERVICE_WATCHDOG_FEED_INTERVAL_MS
+    int "Watchdog feed interval in milliseconds"
+    default 2500
+    range 100 300000
+    depends on FW_SERVICE_WATCHDOG
+    help
+      Periodic feed cadence. Keep this comfortably below the watchdog timeout.
+
+config FW_SERVICE_WATCHDOG_MAX_SUPERVISED_TASKS
+    int "Maximum supervised watchdog tasks"
+    default 4
+    range 0 16
+    depends on FW_SERVICE_WATCHDOG
+
 rsource "logging/Kconfig"
 
 endmenu

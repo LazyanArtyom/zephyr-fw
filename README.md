@@ -264,6 +264,7 @@ health status
 health storage info
 health factory reset
 health watchdog status
+health watchdog feed
 i2cdetect -r -y 0
 i2cdetect -y i2c0
 i2cdetect -a -r -y 0

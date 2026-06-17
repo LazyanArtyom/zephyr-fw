@@ -11,17 +11,6 @@ namespace {
 
 using platform::shell::Console;
 
-int PrintHelp(const Console& output) {
-    output.line("Usage:");
-    output.line("  diag status");
-    output.line("  diag crash");
-    output.line("  diag reset-cause");
-    output.line("  diag threads");
-    output.line("  diag stacks");
-    output.line("  diag clear");
-    return 0;
-}
-
 int PrintRecordStatus(const Console& output) {
     const platform::Result<services::diagnostics::CrashRecord> record =
         services::diagnostics::DiagnosticsService::ReadCrashRecord();
@@ -46,7 +35,18 @@ int PrintRecordStatus(const Console& output) {
     return 0;
 }
 
-int PrintCrash(const Console& output) {
+int CmdStatus(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    return PrintRecordStatus(Console(shell));
+}
+
+int CmdCrash(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    const Console output(shell);
     const platform::Result<services::diagnostics::CrashRecord> record =
         services::diagnostics::DiagnosticsService::ReadCrashRecord();
     if (!record.ok()) {
@@ -61,13 +61,18 @@ int PrintCrash(const Console& output) {
     output.field("Last fatal thread", record.value().last_fatal_thread[0] == '\0'
                                           ? "unknown"
                                           : record.value().last_fatal_thread);
-    output.integer_field("Last fatal uptime", record.value().last_fatal_uptime_ms, "ms");
+    output.integer_field("Last fatal uptime",
+                         static_cast<std::int64_t>(record.value().last_fatal_uptime_ms), "ms");
     output.field("Last watchdog", record.value().last_watchdog_reason);
     return 0;
 }
 
-int PrintResetCause(const Console& output) {
+int CmdResetCause(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
     const platform::ResetInfo reset_info = platform::ResetInfo::Current();
+    const Console output(shell);
     output.field("Reset reason", reset_info.reason_text());
     output.integer_field("Reset flags", reset_info.flags());
     output.feature("reset cause driver", reset_info.available());
@@ -83,7 +88,11 @@ void PrintThread(const k_thread* thread, void* context) {
 }
 #endif
 
-int PrintThreads(const Console& output) {
+int CmdThreads(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    const Console output(shell);
 #if defined(CONFIG_THREAD_MONITOR)
     output.section("Threads");
     k_thread_foreach_unlocked(PrintThread, const_cast<Console*>(&output));
@@ -108,13 +117,17 @@ void PrintStack(const k_thread* thread, void* context) {
     const std::size_t size = thread->stack_info.size;
     const std::size_t used = size >= unused ? size - unused : 0;
     output->field(name == nullptr || name[0] == '\0' ? "unknown" : name, "");
-    output->integer_field("  stack used", used, "bytes");
-    output->integer_field("  stack free", unused, "bytes");
-    output->integer_field("  stack size", size, "bytes");
+    output->integer_field("  stack used", static_cast<std::int64_t>(used), "bytes");
+    output->integer_field("  stack free", static_cast<std::int64_t>(unused), "bytes");
+    output->integer_field("  stack size", static_cast<std::int64_t>(size), "bytes");
 }
 #endif
 
-int PrintStacks(const Console& output) {
+int CmdStacks(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    const Console output(shell);
 #if defined(CONFIG_THREAD_MONITOR) && defined(CONFIG_THREAD_STACK_INFO)
     output.section("Stacks");
     k_thread_foreach_unlocked(PrintStack, const_cast<Console*>(&output));
@@ -125,7 +138,11 @@ int PrintStacks(const Console& output) {
 #endif
 }
 
-int ClearRecord(const Console& output) {
+int CmdClear(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    const Console output(shell);
     const platform::Status status = services::diagnostics::DiagnosticsService::ClearCrashRecord();
     if (!status.ok()) {
         return platform::shell::PrintStatusError(output, "diagnostics clear failed", status);
@@ -135,38 +152,15 @@ int ClearRecord(const Console& output) {
     return 0;
 }
 
-int CmdDiagnostics(const shell* shell, size_t argc, char** argv) {
-    const Console output(shell);
-    const platform::shell::Arguments arguments(argc, argv);
-
-    if (arguments.size() < 2) {
-        return PrintHelp(output);
-    }
-
-    const platform::StringView command = arguments.at(1);
-    if (command.equals("status")) {
-        return PrintRecordStatus(output);
-    }
-    if (command.equals("crash")) {
-        return PrintCrash(output);
-    }
-    if (command.equals("reset-cause")) {
-        return PrintResetCause(output);
-    }
-    if (command.equals("threads")) {
-        return PrintThreads(output);
-    }
-    if (command.equals("stacks")) {
-        return PrintStacks(output);
-    }
-    if (command.equals("clear")) {
-        return ClearRecord(output);
-    }
-
-    output.error_value("unknown diagnostics command", command);
-    return -EINVAL;
-}
-
 }  // namespace
 
-SHELL_CMD_ARG_REGISTER(diag, NULL, "Diagnostics commands.", CmdDiagnostics, 1, 2);
+SHELL_STATIC_SUBCMD_SET_CREATE(diag_subcommands,
+                               SHELL_CMD(status, NULL, "Show diagnostics status.", CmdStatus),
+                               SHELL_CMD(crash, NULL, "Show crash diagnostics.", CmdCrash),
+                               SHELL_CMD(reset - cause, NULL, "Show reset cause.", CmdResetCause),
+                               SHELL_CMD(threads, NULL, "Show thread diagnostics.", CmdThreads),
+                               SHELL_CMD(stacks, NULL, "Show stack diagnostics.", CmdStacks),
+                               SHELL_CMD(clear, NULL, "Clear diagnostics crash record.", CmdClear),
+                               SHELL_SUBCMD_SET_END);
+
+SHELL_CMD_REGISTER(diag, &diag_subcommands, "Diagnostics commands.", NULL);

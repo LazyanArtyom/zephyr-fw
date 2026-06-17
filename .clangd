@@ -28,6 +28,19 @@ Diagnostics:
   UnusedIncludes: Strict
   ClangTidy:
     Remove:
+      - bugprone-macro-parentheses
+      - bugprone-implicit-widening-of-multiplication-result
+      - bugprone-narrowing-conversions
+      - modernize-use-default-member-init
+      - modernize-use-integer-sign-comparison
+      - readability-identifier-length
+      - readability-redundant-member-init
+      - readability-use-concise-preprocessor-directives
+      - bugprone-reserved-identifier
+      - bugprone-sizeof-expression
+      - google-explicit-constructor
       - cppcoreguidelines-avoid-c-arrays
       - hicpp-avoid-c-arrays
       - modernize-avoid-c-arrays
+      - modernize-deprecated-headers
+      - readability-identifier-naming

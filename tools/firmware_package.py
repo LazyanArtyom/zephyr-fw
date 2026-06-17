@@ -386,6 +386,12 @@ def create_package(options: PackageOptions) -> pathlib.Path:
             "log_shell_commands": config_bool(zephyr_config, "CONFIG_LOG_CMDS"),
             "diagnostics_enabled": config_bool(zephyr_config, "CONFIG_THREAD_ANALYZER")
             or config_bool(zephyr_config, "CONFIG_DEBUG_COREDUMP"),
+            "watchdog_enabled": config_bool(zephyr_config, "CONFIG_FW_SERVICE_WATCHDOG"),
+            "zephyr_watchdog_enabled": config_bool(zephyr_config, "CONFIG_WATCHDOG"),
+            "watchdog_timeout_ms": zephyr_config.get("CONFIG_FW_SERVICE_WATCHDOG_TIMEOUT_MS", "0"),
+            "watchdog_feed_interval_ms": zephyr_config.get(
+                "CONFIG_FW_SERVICE_WATCHDOG_FEED_INTERVAL_MS", "0"
+            ),
             "thread_analyzer": config_bool(zephyr_config, "CONFIG_THREAD_ANALYZER"),
             "coredump": config_bool(zephyr_config, "CONFIG_DEBUG_COREDUMP"),
             "coredump_shell": config_bool(zephyr_config, "CONFIG_DEBUG_COREDUMP_SHELL"),

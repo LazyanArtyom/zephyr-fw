@@ -26,3 +26,10 @@ diag clear
 intended for `debug` and `service` images. Normal production images keep the
 persistent crash record and reset cause, but do not expose shell diagnostics when
 the production shell policy disables the shell.
+
+## Watchdog Resets
+
+The watchdog service records hardware watchdog reset detection from
+`platform::ResetInfo::Current()` when diagnostics storage is available. Runtime
+status is exposed through `health watchdog status`, and a manual feed check is
+available as `health watchdog feed` in shell-enabled builds.

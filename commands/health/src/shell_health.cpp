@@ -1,4 +1,3 @@
-#include <errno.h>
 #include <platform/core/status.h>
 #include <platform/shell/console.h>
 #include <platform/storage/storage_info.h>
@@ -9,16 +8,11 @@
 
 namespace {
 
-int PrintUsage(const platform::shell::Console& output) {
-    output.line("Usage:");
-    output.line("  health status");
-    output.line("  health storage info");
-    output.line("  health factory reset");
-    output.line("  health watchdog status");
-    return 0;
-}
+int CmdHealthStatus(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
 
-int CmdHealthStatus(const platform::shell::Console& output) {
+    const platform::shell::Console output(shell);
     const platform::Status status = services::health::HealthService::OverallStatus();
     if (!status.ok()) {
         return platform::shell::PrintStatusError(output, "health check failed", status);
@@ -27,7 +21,11 @@ int CmdHealthStatus(const platform::shell::Console& output) {
     return 0;
 }
 
-int CmdStorageInfo(const platform::shell::Console& output) {
+int CmdStorageInfo(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    const platform::shell::Console output(shell);
     output.field("Settings backend", platform::StorageInfo::BackendName());
     output.feature("persistent settings", platform::StorageInfo::PersistentSettingsEnabled());
 
@@ -43,7 +41,11 @@ int CmdStorageInfo(const platform::shell::Console& output) {
     return 0;
 }
 
-int CmdFactoryReset(const platform::shell::Console& output) {
+int CmdFactoryReset(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    const platform::shell::Console output(shell);
     const services::factory_reset::FactoryResetPolicy policy =
         services::factory_reset::FactoryResetService::Policy();
     output.field("Factory reset behavior", policy.behavior);
@@ -58,41 +60,71 @@ int CmdFactoryReset(const platform::shell::Console& output) {
     return 0;
 }
 
-int CmdWatchdogStatus(const platform::shell::Console& output) {
-    const services::watchdog::WatchdogStatus status = services::watchdog::WatchdogService::Status();
+void PrintWatchdogStatus(const platform::shell::Console& output,
+                         const services::watchdog::WatchdogStatus& status) {
     output.feature("watchdog", status.configured);
     output.feature("device ready", status.device_ready);
+    output.feature("initialized", status.initialized);
+    output.feature("last reset watchdog", status.last_reset_watchdog);
     output.field("Device", status.device_name);
     output.field("Mode", status.mode);
+    output.integer_field("Channel", status.channel_id);
+    output.integer_field("Timeout", status.timeout_ms, "ms");
+    output.integer_field("Feed interval", status.feed_interval_ms, "ms");
+    output.integer_field("Feed count", status.feed_count);
+    output.integer_field("Last feed uptime", static_cast<std::int64_t>(status.last_feed_uptime_ms),
+                         "ms");
+    output.integer_field("Last error", status.last_error);
+    output.feature("supervision", status.supervision_available);
+    output.feature("supervision healthy", status.supervision_healthy);
+    output.integer_field("Supervised tasks", status.supervised_task_count);
+    if (!status.unhealthy_task.empty()) {
+        output.field("Unhealthy task", status.unhealthy_task);
+    }
+}
+
+int CmdWatchdogStatus(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
+    PrintWatchdogStatus(platform::shell::Console(shell),
+                        services::watchdog::WatchdogService::Status());
     return 0;
 }
 
-int CmdHealth(const shell* shell, size_t argc, char** argv) {
+int CmdWatchdogFeed(const shell* shell, size_t argc, char** argv) {
+    ARG_UNUSED(argc);
+    ARG_UNUSED(argv);
+
     const platform::shell::Console output(shell);
-    const platform::shell::Arguments arguments(argc, argv);
-
-    if (arguments.size() < 2 || arguments.at(1).equals("--help") || arguments.at(1).equals("-h")) {
-        return PrintUsage(output);
+    const platform::Status status = services::watchdog::WatchdogService::Feed();
+    if (!status.ok()) {
+        return platform::shell::PrintStatusError(output, "watchdog feed failed", status);
     }
-
-    const platform::StringView command = arguments.at(1);
-    if (command.equals("status")) {
-        return CmdHealthStatus(output);
-    }
-    if (command.equals("factory") && arguments.size() >= 3 && arguments.at(2).equals("reset")) {
-        return CmdFactoryReset(output);
-    }
-    if (command.equals("storage") && arguments.size() >= 3 && arguments.at(2).equals("info")) {
-        return CmdStorageInfo(output);
-    }
-    if (command.equals("watchdog") && arguments.size() >= 3 && arguments.at(2).equals("status")) {
-        return CmdWatchdogStatus(output);
-    }
-
-    output.error_value("unknown health command", command);
-    return -EINVAL;
+    output.line("Watchdog fed.");
+    return 0;
 }
 
 }  // namespace
 
-SHELL_CMD_ARG_REGISTER(health, NULL, "Health support commands.", CmdHealth, 1, 3);
+SHELL_STATIC_SUBCMD_SET_CREATE(storage_subcommands,
+                               SHELL_CMD(info, NULL, "Show storage information.", CmdStorageInfo),
+                               SHELL_SUBCMD_SET_END);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(factory_subcommands,
+                               SHELL_CMD(reset, NULL, "Reset persistent settings.",
+                                         CmdFactoryReset),
+                               SHELL_SUBCMD_SET_END);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(watchdog_subcommands,
+                               SHELL_CMD(status, NULL, "Show watchdog status.", CmdWatchdogStatus),
+                               SHELL_CMD(feed, NULL, "Feed the watchdog now.", CmdWatchdogFeed),
+                               SHELL_SUBCMD_SET_END);
+
+SHELL_STATIC_SUBCMD_SET_CREATE(
+    health_subcommands, SHELL_CMD(status, NULL, "Show health status.", CmdHealthStatus),
+    SHELL_CMD(storage, &storage_subcommands, "Storage commands.", NULL),
+    SHELL_CMD(factory, &factory_subcommands, "Factory commands.", NULL),
+    SHELL_CMD(watchdog, &watchdog_subcommands, "Watchdog commands.", NULL), SHELL_SUBCMD_SET_END);
+
+SHELL_CMD_REGISTER(health, &health_subcommands, "Health support commands.", NULL);
