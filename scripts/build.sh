@@ -61,6 +61,62 @@ escape_kconfig_string() {
     printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
+resolve_existing_file() {
+    local file_path="$1"
+    local file_dir
+    local file_name
+
+    [[ -f "${file_path}" ]] || die "file not found: ${file_path}"
+    file_dir="$(cd "$(dirname "${file_path}")" && pwd -P)"
+    file_name="$(basename "${file_path}")"
+    printf '%s/%s\n' "${file_dir}" "${file_name}"
+}
+
+sha256_of_file() {
+    local file_path="$1"
+
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "${file_path}" | awk '{ print $1 }'
+        return
+    fi
+    if command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "${file_path}" | awk '{ print $1 }'
+        return
+    fi
+
+    die "sha256sum or shasum is required to validate MCUboot signing keys"
+}
+
+is_default_mcuboot_signing_key() {
+    local candidate="$1"
+    local candidate_sha
+    local workspace_dir
+    local default_dirs=()
+    local default_dir
+    local default_key
+
+    candidate_sha="$(sha256_of_file "${candidate}")"
+
+    if [[ -n "${ZEPHYR_BASE:-}" ]]; then
+        workspace_dir="$(dirname "${ZEPHYR_BASE}")"
+        default_dirs+=("${workspace_dir}/bootloader/mcuboot")
+        default_dirs+=("${workspace_dir}/modules/mcuboot")
+    fi
+    default_dirs+=("/opt/zephyrproject/bootloader/mcuboot")
+
+    for default_dir in "${default_dirs[@]}"; do
+        [[ -d "${default_dir}" ]] || continue
+        for default_key in "${default_dir}"/root-*.pem; do
+            [[ -f "${default_key}" ]] || continue
+            if [[ "$(sha256_of_file "${default_key}")" == "${candidate_sha}" ]]; then
+                return 0
+            fi
+        done
+    done
+
+    return 1
+}
+
 read_cmake_cache_value() {
     local cache_file="$1"
     local key="$2"
@@ -358,6 +414,22 @@ if [[ -z "${ZEPHYR_BASE:-}" || ! -f "${ZEPHYR_BASE}/cmake/modules/zephyr_default
     die "invalid ZEPHYR_BASE: ${ZEPHYR_BASE:-unset} (missing cmake/modules/zephyr_default.cmake)"
 fi
 
+MCUBOOT_SIGNING_KEY_SOURCE="${MCUBOOT_SIGNING_KEY_FILE:-${FW_MCUBOOT_SIGNING_KEY_FILE:-}}"
+MCUBOOT_SIGNING_KEY_ABS=""
+GENERATED_SYSBUILD_SIGNING_CONF=""
+if [[ "${BOOT_MODE}" == "mcuboot" ]]; then
+    if [[ -n "${MCUBOOT_SIGNING_KEY_SOURCE}" ]]; then
+        MCUBOOT_SIGNING_KEY_ABS="$(resolve_existing_file "${MCUBOOT_SIGNING_KEY_SOURCE}")"
+        if [[ "${BUILD_PROFILE}" == "production" ]] && is_default_mcuboot_signing_key "${MCUBOOT_SIGNING_KEY_ABS}"; then
+            die "production MCUboot builds must not use Zephyr/MCUboot sample signing keys: ${MCUBOOT_SIGNING_KEY_ABS}"
+        fi
+        GENERATED_SYSBUILD_SIGNING_CONF="${GENERATED_CONF_DIR}/sysbuild_signing.conf"
+        printf 'SB_CONFIG_BOOT_SIGNATURE_KEY_FILE="%s"\n'             "$(escape_kconfig_string "${MCUBOOT_SIGNING_KEY_ABS}")" > "${GENERATED_SYSBUILD_SIGNING_CONF}"
+    elif [[ "${BUILD_PROFILE}" == "production" ]]; then
+        die "production MCUboot builds require MCUBOOT_SIGNING_KEY_FILE=/absolute/path/to/private-key.pem"
+    fi
+fi
+
 AUTO_PRISTINE_REASON=""
 BUILD_DIR_RESET_REASON=""
 if [[ -f "${BUILD_DIR}/CMakeCache.txt" ]]; then
@@ -399,6 +471,13 @@ echo "Settings       : ${SETTINGS_MODE} (from metadata.yml)"
 echo "Shell          : ${SHELL_MODE} (profile policy)"
 echo "Asserts        : ${ASSERTS_MODE} (profile policy)"
 echo "Diagnostics    : ${DIAGNOSTICS_MODE} (profile policy)"
+if [[ "${BOOT_MODE}" == "mcuboot" ]]; then
+    if [[ -n "${MCUBOOT_SIGNING_KEY_ABS}" ]]; then
+        echo "MCUboot key    : ${MCUBOOT_SIGNING_KEY_ABS}"
+    else
+        echo "MCUboot key    : <Zephyr default; not allowed for production>"
+    fi
+fi
 echo "Build dir      : ${BUILD_DIR}"
 echo "Conf files     : ${CONF_FILE_ARG}"
 if [[ -f "${BOARD_OVERLAY}" ]]; then
@@ -437,6 +516,10 @@ BUILD_COMMAND=(
 
 if [[ -f "${BOARD_OVERLAY}" ]]; then
     BUILD_COMMAND+=(-DDTC_OVERLAY_FILE="${BOARD_OVERLAY}")
+fi
+
+if [[ -n "${GENERATED_SYSBUILD_SIGNING_CONF}" ]]; then
+    BUILD_COMMAND+=(-DSB_EXTRA_CONF_FILE="${GENERATED_SYSBUILD_SIGNING_CONF}")
 fi
 
 if [[ -n "${WEST_WORKDIR}" ]]; then

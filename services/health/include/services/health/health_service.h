@@ -7,6 +7,7 @@ namespace services::health {
 class HealthService final {
    public:
     [[nodiscard]] static platform::Status OverallStatus();
+    [[nodiscard]] static platform::Status ConfirmBootIfHealthy();
 };
 
 }  // namespace services::health

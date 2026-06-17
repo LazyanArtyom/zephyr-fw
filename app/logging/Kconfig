@@ -13,6 +13,10 @@ module = FW_SERVICE_DISPLAY
 module-str = services/display
 source "subsys/logging/Kconfig.template.log_config"
 
+module = FW_SERVICE_HEALTH
+module-str = services/health
+source "subsys/logging/Kconfig.template.log_config"
+
 module = FW_SERVICE_HEALTH_HEARTBEAT
 module-str = services/health heartbeat
 source "subsys/logging/Kconfig.template.log_config"
