@@ -110,6 +110,26 @@ maybe_manifest_value() {
     manifest_value "${manifest_file}" "${dotted_key}" 2>/dev/null || true
 }
 
+manifest_flash_segments() {
+    local manifest_file="$1"
+    "${PYTHON_BIN}" - "${manifest_file}" <<'SEGMENTS_PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    manifest = json.load(handle)
+segments = manifest.get("flash", {}).get("segments")
+if not isinstance(segments, list) or not segments:
+    sys.exit(2)
+for segment in segments:
+    offset = segment.get("offset")
+    image = segment.get("image")
+    if not offset or not image:
+        sys.exit(2)
+    print(f"{offset}	{image}")
+SEGMENTS_PY
+}
+
 open_monitor() {
     if command -v picocom >/dev/null 2>&1; then
         exec picocom -b "${SERIAL_BAUD}" "${PORT}"
@@ -131,6 +151,7 @@ FLASH_FREQ=""
 FLASH_SIZE=""
 SERIAL_BAUD=""
 PYTHON_BIN=""
+FLASH_SEGMENTS=()
 ERASE=0
 MONITOR=0
 LIST_PORTS=0
@@ -247,10 +268,17 @@ if [[ -n "${PACKAGE_DIR}" ]]; then
     SERIAL_BAUD="${SERIAL_BAUD:-$(maybe_manifest_value "${MANIFEST_FILE}" flash.serial_baud)}"
 
     if [[ -z "${IMAGE_FILE}" ]]; then
-        if [[ -f "${PACKAGE_DIR}/zephyr.signed.bin" ]]; then
-            IMAGE_FILE="${PACKAGE_DIR}/zephyr.signed.bin"
-        else
-            IMAGE_FILE="${PACKAGE_DIR}/zephyr.bin"
+        while IFS=$'	' read -r segment_offset segment_image; do
+            [[ -n "${segment_offset}" && -n "${segment_image}" ]] || continue
+            FLASH_SEGMENTS+=("${segment_offset}" "${PACKAGE_DIR}/${segment_image}")
+        done < <(manifest_flash_segments "${MANIFEST_FILE}" || true)
+
+        if [[ ${#FLASH_SEGMENTS[@]} -eq 0 ]]; then
+            if [[ -f "${PACKAGE_DIR}/zephyr.signed.bin" ]]; then
+                IMAGE_FILE="${PACKAGE_DIR}/zephyr.signed.bin"
+            else
+                IMAGE_FILE="${PACKAGE_DIR}/zephyr.bin"
+            fi
         fi
     fi
 fi
@@ -261,10 +289,17 @@ FLASH_FREQ="${FLASH_FREQ:-40m}"
 FLASH_SIZE="${FLASH_SIZE:-detect}"
 SERIAL_BAUD="${SERIAL_BAUD:-115200}"
 
-[[ -n "${IMAGE_FILE}" ]] || die "no image selected; run from a package directory, pass --package, or pass --image"
-[[ -f "${IMAGE_FILE}" ]] || die "firmware image not found: ${IMAGE_FILE}"
+if [[ ${#FLASH_SEGMENTS[@]} -eq 0 ]]; then
+    [[ -n "${IMAGE_FILE}" ]] || die "no image selected; run from a package directory, pass --package, or pass --image"
+    [[ -f "${IMAGE_FILE}" ]] || die "firmware image not found: ${IMAGE_FILE}"
+    [[ -n "${FLASH_OFFSET}" ]] || die "flash offset is required outside package mode; pass --offset"
+    FLASH_SEGMENTS=("${FLASH_OFFSET}" "${IMAGE_FILE}")
+else
+    for ((index = 1; index < ${#FLASH_SEGMENTS[@]}; index += 2)); do
+        [[ -f "${FLASH_SEGMENTS[index]}" ]] || die "firmware image not found: ${FLASH_SEGMENTS[index]}"
+    done
+fi
 [[ -n "${FLASH_CHIP}" ]] || die "flash chip is required outside package mode; pass --chip"
-[[ -n "${FLASH_OFFSET}" ]] || die "flash offset is required outside package mode; pass --offset"
 
 require_esptool
 
@@ -273,11 +308,18 @@ echo "  Port       : ${PORT}"
 if [[ -n "${PACKAGE_DIR}" ]]; then
     echo "  Package    : ${PACKAGE_DIR}"
 fi
-echo "  Image      : ${IMAGE_FILE}"
 echo "  Python     : ${PYTHON_BIN}"
 echo "  Chip       : ${FLASH_CHIP}"
-echo "  Offset     : ${FLASH_OFFSET}"
 echo "  Baud       : ${FLASH_BAUD}"
+if [[ ${#FLASH_SEGMENTS[@]} -eq 2 ]]; then
+    echo "  Image      : ${FLASH_SEGMENTS[1]}"
+    echo "  Offset     : ${FLASH_SEGMENTS[0]}"
+else
+    echo "  Segments   :"
+    for ((index = 0; index < ${#FLASH_SEGMENTS[@]}; index += 2)); do
+        echo "    ${FLASH_SEGMENTS[index]} ${FLASH_SEGMENTS[index + 1]}"
+    done
+fi
 echo
 
 if [[ "${ERASE}" -eq 1 ]]; then
@@ -296,7 +338,7 @@ fi
     --flash-mode "${FLASH_MODE}" \
     --flash-freq "${FLASH_FREQ}" \
     --flash-size "${FLASH_SIZE}" \
-    "${FLASH_OFFSET}" "${IMAGE_FILE}"
+    "${FLASH_SEGMENTS[@]}"
 
 if [[ "${MONITOR}" -eq 1 ]]; then
     open_monitor

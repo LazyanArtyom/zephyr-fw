@@ -447,5 +447,17 @@ fi
 
 echo
 echo "Build complete:"
-echo "  ${BUILD_DIR}/zephyr/zephyr.bin"
-echo "  ${BUILD_DIR}/zephyr/zephyr.elf"
+if [[ "${BOOT_MODE}" == "mcuboot" ]]; then
+    APP_DOMAIN="zephyr-fw"
+    if [[ -f "${BUILD_DIR}/domains.yaml" ]]; then
+        APP_DOMAIN_VALUE="$(awk -F': *' '$1 == "default" { print $2; exit }' "${BUILD_DIR}/domains.yaml")"
+        APP_DOMAIN="${APP_DOMAIN_VALUE:-${APP_DOMAIN}}"
+    fi
+    echo "  App image      : ${BUILD_DIR}/${APP_DOMAIN}/zephyr/zephyr.bin"
+    echo "  Signed app     : ${BUILD_DIR}/${APP_DOMAIN}/zephyr/zephyr.signed.bin"
+    echo "  MCUboot image  : ${BUILD_DIR}/mcuboot/zephyr/zephyr.bin"
+    echo "  App ELF        : ${BUILD_DIR}/${APP_DOMAIN}/zephyr/zephyr.elf"
+else
+    echo "  ${BUILD_DIR}/zephyr/zephyr.bin"
+    echo "  ${BUILD_DIR}/zephyr/zephyr.elf"
+fi

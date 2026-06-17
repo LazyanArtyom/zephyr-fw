@@ -285,6 +285,30 @@ def read_zephyr_config(config_file: pathlib.Path) -> dict[str, str]:
     return values
 
 
+def read_sysbuild_default_domain(build_dir: pathlib.Path) -> str | None:
+    domains_file = build_dir / "domains.yaml"
+    if not domains_file.is_file():
+        return None
+
+    for line in domains_file.read_text(encoding="utf-8", errors="replace").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("default:"):
+            value = stripped.split(":", 1)[1].strip().strip('"')
+            return value or None
+    return None
+
+
+def resolve_app_zephyr_dir(build_dir: pathlib.Path, boot_mode: str) -> pathlib.Path:
+    if boot_mode != "mcuboot":
+        return build_dir / "zephyr"
+
+    default_domain = read_sysbuild_default_domain(build_dir) or "zephyr-fw"
+    domain_zephyr_dir = build_dir / default_domain / "zephyr"
+    if domain_zephyr_dir.is_dir():
+        return domain_zephyr_dir
+    return build_dir / "zephyr"
+
+
 def config_bool(config: dict[str, str], key: str) -> bool:
     return config.get(key) == "y"
 
@@ -321,13 +345,20 @@ def create_package(options: PackageOptions) -> pathlib.Path:
     flash = resolved_flash_settings(board)
 
     build_dir = options.build_dir or PROJECT_ROOT / "build" / options.board_profile / options.build_profile / options.boot_mode
-    zephyr_dir = build_dir / "zephyr"
+    zephyr_dir = resolve_app_zephyr_dir(build_dir, options.boot_mode)
     zephyr_config = read_zephyr_config(zephyr_dir / ".config")
     firmware_image = zephyr_dir / "zephyr.bin"
+    bootloader_image = build_dir / "mcuboot" / "zephyr" / "zephyr.bin"
+    signed_firmware_image = zephyr_dir / "zephyr.signed.bin"
     if not build_dir.is_dir():
         raise PackageError(f"build directory not found: {build_dir}")
     if not firmware_image.is_file():
         raise PackageError(f"firmware image not found: {firmware_image}")
+    if options.boot_mode == "mcuboot":
+        if not bootloader_image.is_file():
+            raise PackageError(f"MCUboot image not found: {bootloader_image}")
+        if not signed_firmware_image.is_file():
+            raise PackageError(f"signed firmware image not found: {signed_firmware_image}")
 
     production_dts_issues = validate_production_policy_against_dts(
         production_policy, zephyr_dir / "zephyr.dts"
@@ -356,7 +387,22 @@ def create_package(options: PackageOptions) -> pathlib.Path:
     copy_if_exists(build_dir / "compile_commands.json", package_dir)
     copy_if_exists(production_policy_file, package_dir, "production.yml")
     copy_if_exists(build_dir / "domains.yaml", package_dir)
-    copy_if_exists(build_dir / "mcuboot" / "zephyr" / "zephyr.bin", package_dir, "mcuboot.bin")
+    copy_if_exists(bootloader_image, package_dir, "mcuboot.bin")
+
+    flash_segments = []
+    if options.boot_mode == "mcuboot":
+        flash_segments = [
+            {"role": "bootloader", "offset": flash["offset"], "image": "mcuboot.bin"},
+            {
+                "role": "application",
+                "offset": production_policy["slot0_offset"],
+                "image": "zephyr.signed.bin",
+            },
+        ]
+    else:
+        flash_segments = [
+            {"role": "application", "offset": flash["offset"], "image": "zephyr.bin"}
+        ]
 
     (package_dir / "partition_summary.txt").write_text(
         partition_summary(zephyr_dir / "zephyr.dts", options.board_profile, options.boot_mode, production_policy_file),
@@ -405,6 +451,7 @@ def create_package(options: PackageOptions) -> pathlib.Path:
             "mode": flash["mode"],
             "freq": flash["freq"],
             "size": flash["size"],
+            "segments": flash_segments,
         },
         "production": {
             "mcuboot_partition_layout": production_policy["mcuboot_partition_layout"],
@@ -430,6 +477,7 @@ def create_package(options: PackageOptions) -> pathlib.Path:
         "artifacts": {
             "firmware_image": "zephyr.bin",
             "signed_image": "zephyr.signed.bin when present",
+            "bootloader_image": "mcuboot.bin when present",
             "manifest": "manifest.json",
             "sha256": "firmware.sha256",
             "zephyr_config": "zephyr.config",
@@ -451,7 +499,9 @@ def create_package(options: PackageOptions) -> pathlib.Path:
         f"Boot mode: {options.boot_mode}\n"
         f"Shell: {'enabled' if manifest['runtime']['shell_enabled'] else 'disabled'}\n\n"
         "Primary image:\n"
-        "  zephyr.bin\n\n"
+        "  zephyr.bin\n"
+        + ("  zephyr.signed.bin\n  mcuboot.bin\n" if options.boot_mode == "mcuboot" else "")
+        + "\n"
         "Metadata:\n"
         "  manifest.json\n"
         "  firmware.sha256\n"

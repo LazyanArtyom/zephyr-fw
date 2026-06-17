@@ -134,7 +134,18 @@ def discover_build_dirs() -> list[pathlib.Path]:
             for boot_dir in sorted(path for path in profile_dir.iterdir() if path.is_dir()):
                 if boot_dir.name not in VALID_BOOT_MODES:
                     continue
-                if (boot_dir / "zephyr" / "zephyr.bin").is_file():
+                app_image = boot_dir / "zephyr" / "zephyr.bin"
+                if boot_dir.name == "mcuboot":
+                    domains_file = boot_dir / "domains.yaml"
+                    default_domain = "zephyr-fw"
+                    if domains_file.is_file():
+                        for line in domains_file.read_text(encoding="utf-8", errors="replace").splitlines():
+                            stripped = line.strip()
+                            if stripped.startswith("default:"):
+                                default_domain = stripped.split(":", 1)[1].strip().strip('"') or default_domain
+                                break
+                    app_image = boot_dir / default_domain / "zephyr" / "zephyr.bin"
+                if app_image.is_file():
                     candidates.append(boot_dir)
     return candidates
 
