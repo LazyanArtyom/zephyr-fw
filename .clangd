@@ -4,6 +4,10 @@ CompileFlags:
     - -D__CLANGD__
     - -D__XTENSA__
     - -D__xtensa__
+    # Zephyr logging/cbprintf macros expand through target-specific constructs
+    # that host clangd reports at the application LOG_* call site.
+    - -Wno-vla-cxx-extension
+    - -Wno-vla-extension
   Remove:
     - -fmodule-mapper=*
     - -fdeps-format=*
