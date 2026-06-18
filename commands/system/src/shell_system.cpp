@@ -41,7 +41,7 @@ int CmdReboot(const shell* shell, size_t argc, char** argv) {
 
 SHELL_STATIC_SUBCMD_SET_CREATE(
     system_subcommands, SHELL_CMD(uptime, NULL, "Show system uptime.", CmdUptime),
-    SHELL_CMD(reset - reason, NULL, "Show last reset reason.", CmdResetReason),
+    SHELL_EXPR_CMD(1, reset-reason, NULL, "Show last reset reason.", CmdResetReason),
     SHELL_CMD(reboot, NULL, "Cold reboot the device.", CmdReboot), SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(system, &system_subcommands, "System commands.", NULL);

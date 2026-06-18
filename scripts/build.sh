@@ -49,6 +49,24 @@ join_by_semicolon() {
     echo "$*"
 }
 
+add_fw_metadata_args() {
+    local prefix="$1"
+
+    BUILD_COMMAND+=(
+        "-D${prefix}FW_BUILD_PROFILE=${BUILD_PROFILE}"
+        "-D${prefix}FW_BOARD_PROFILE=${BOARD_PROFILE}"
+        "-D${prefix}FW_BOARD_DISPLAY_NAME=${BOARD_DISPLAY_NAME:-${BOARD_PROFILE}}"
+        "-D${prefix}FW_BOARD_STATUS=${BOARD_STATUS:-unknown}"
+        "-D${prefix}FW_BOARD_SERIAL_BAUD=${BOARD_SERIAL_BAUD:-unknown}"
+        "-D${prefix}FW_BOARD_FLASH_RUNNER=${BOARD_FLASH_RUNNER:-unknown}"
+        "-D${prefix}FW_BOARD_FLASH_CHIP=${BOARD_FLASH_CHIP:-unknown}"
+        "-D${prefix}FW_BOARD_FLASH_OFFSET=${BOARD_FLASH_OFFSET:-unknown}"
+        "-D${prefix}FW_BOARD_DESCRIPTION=${BOARD_DESCRIPTION:-}"
+        "-D${prefix}FW_BOOT_MODE=${BOOT_MODE}"
+        "-D${prefix}FW_DISPLAY_MODE=${DISPLAY_MODE}"
+    )
+}
+
 add_conf_if_exists() {
     local file_path="$1"
 
@@ -499,20 +517,17 @@ BUILD_COMMAND=(
     --
     -DCONF_FILE="${CONF_FILE_ARG}"
     -DBOARD_ROOT="${BOARD_ROOT}"
-    -DFW_BUILD_PROFILE="${BUILD_PROFILE}"
-    -DFW_BOARD_PROFILE="${BOARD_PROFILE}"
-    -DFW_BOARD_DISPLAY_NAME="${BOARD_DISPLAY_NAME:-${BOARD_PROFILE}}"
-    -DFW_BOARD_STATUS="${BOARD_STATUS:-unknown}"
-    -DFW_BOARD_SERIAL_BAUD="${BOARD_SERIAL_BAUD:-unknown}"
-    -DFW_BOARD_FLASH_RUNNER="${BOARD_FLASH_RUNNER:-unknown}"
-    -DFW_BOARD_FLASH_CHIP="${BOARD_FLASH_CHIP:-unknown}"
-    -DFW_BOARD_FLASH_OFFSET="${BOARD_FLASH_OFFSET:-unknown}"
-    -DFW_BOARD_DESCRIPTION="${BOARD_DESCRIPTION:-}"
-    -DFW_BOOT_MODE="${BOOT_MODE}"
-    -DFW_DISPLAY_MODE="${DISPLAY_MODE}"
     -DZEPHYR_BASE="${ZEPHYR_BASE}"
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 )
+
+add_fw_metadata_args ""
+if [[ "${BOOT_MODE}" == "mcuboot" ]]; then
+    # Sysbuild consumes top-level -D arguments itself. Forward project metadata
+    # into the application domain so generated firmware metadata remains
+    # accurate in MCUboot/sysbuild builds.
+    add_fw_metadata_args "${FW_FIRMWARE_NAME}_"
+fi
 
 if [[ -f "${BOARD_OVERLAY}" ]]; then
     BUILD_COMMAND+=(-DDTC_OVERLAY_FILE="${BOARD_OVERLAY}")
