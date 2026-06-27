@@ -17,6 +17,15 @@ Verify board serial and board hw-rev commands with test values
 Verify OLED splash on esp32_oled hardware
 ```
 
+Host tests:
+
+```sh
+./scripts/run_tests.sh
+```
+
+Current host coverage checks shell command argument contracts, config policy, and
+firmware package DTS partition parsing.
+
 Future testing:
 
 ```text

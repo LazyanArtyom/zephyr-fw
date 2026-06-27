@@ -23,6 +23,7 @@ from board_metadata import (
 
 
 PACKAGE_COMPONENT_RE = re.compile(r"^[A-Za-z0-9._+-]+$")
+DTS_LABEL_RE = re.compile(r'label\s*=\s*"(?P<label>[^"]*)"')
 VALID_BUILD_PROFILES = ("debug", "release", "production", "service")
 VALID_BOOT_MODES = ("no-mcuboot", "mcuboot")
 
@@ -180,8 +181,9 @@ def parse_dts_partitions(source_dts: pathlib.Path) -> list[DtsPartition]:
         if not in_partition:
             continue
 
-        if stripped.startswith("label ="):
-            label = stripped.removeprefix("label =").strip().strip('";')
+        label_match = DTS_LABEL_RE.search(stripped)
+        if label_match:
+            label = label_match.group("label")
         elif stripped.startswith("reg ="):
             reg = parse_dts_reg(stripped.removeprefix("reg ="))
         elif stripped == "};":

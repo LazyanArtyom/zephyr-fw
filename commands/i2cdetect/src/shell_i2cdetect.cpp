@@ -4,7 +4,18 @@
 #include <platform/shell/console.h>
 #include <zephyr/shell/shell.h>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace {
+
+constexpr std::size_t kFlagPrefixLength = 1;
+constexpr std::size_t kFirstUserArgIndex = 1;
+constexpr std::uint8_t kScanTableAddressLimit = 0x80U;
+constexpr std::uint8_t kScanTableRowWidth = 0x10U;
+constexpr std::size_t kScanTableLineCapacity = 64;
+constexpr std::size_t kI2cDetectRequiredArgs = 2;
+constexpr std::size_t kI2cDetectOptionalArgs = 8;
 
 int PrintUsage(const platform::shell::Console& output) {
     output.line("Usage:");
@@ -15,7 +26,7 @@ int PrintUsage(const platform::shell::Console& output) {
 }
 
 bool IsFlagToken(platform::StringView token) {
-    return token.size() > 1 && token[0] == '-';
+    return token.size() > kFlagPrefixLength && token[0] == '-';
 }
 
 platform::StringView CellForState(const platform::I2cAddressProbeResult& result) {
@@ -35,7 +46,8 @@ platform::StringView CellForState(const platform::I2cAddressProbeResult& result)
     return {};
 }
 
-void AppendCell(platform::FixedString<64>& line, const platform::I2cAddressProbeResult& result) {
+void AppendCell(platform::FixedString<kScanTableLineCapacity>& line,
+                const platform::I2cAddressProbeResult& result) {
     const platform::StringView cell = CellForState(result);
 
     line.append(' ');
@@ -50,12 +62,12 @@ void AppendCell(platform::FixedString<64>& line, const platform::I2cAddressProbe
 void PrintScanTable(const platform::shell::Console& output, const platform::I2cScanResult& result) {
     output.line("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f");
 
-    for (std::uint8_t row = 0; row < 0x80; row += 0x10) {
-        platform::FixedString<64> line;
+    for (std::uint8_t row = 0; row < kScanTableAddressLimit; row += kScanTableRowWidth) {
+        platform::FixedString<kScanTableLineCapacity> line;
         line.append_hex_byte(row);
         line.append(':');
 
-        for (std::uint8_t column = 0; column < 0x10; ++column) {
+        for (std::uint8_t column = 0; column < kScanTableRowWidth; ++column) {
             const std::uint8_t address = static_cast<std::uint8_t>(row + column);
             AppendCell(line, result.addresses[address]);
         }
@@ -69,7 +81,7 @@ int ParseArgs(const platform::shell::Console& output, const platform::shell::Arg
     bool assume_yes = false;
     *bus_spec = {};
 
-    for (std::size_t arg_index = 1; arg_index < arguments.size(); ++arg_index) {
+    for (std::size_t arg_index = kFirstUserArgIndex; arg_index < arguments.size(); ++arg_index) {
         const platform::StringView arg = arguments.at(arg_index);
 
         if (arg.equals("--help") || arg.equals("-h")) {
@@ -85,7 +97,7 @@ int ParseArgs(const platform::shell::Console& output, const platform::shell::Arg
             continue;
         }
 
-        for (std::size_t flag_index = 1; flag_index < arg.size(); ++flag_index) {
+        for (std::size_t flag_index = kFlagPrefixLength; flag_index < arg.size(); ++flag_index) {
             switch (arg[flag_index]) {
                 case 'a':
                     options->include_reserved_addresses = true;
@@ -154,4 +166,5 @@ int CmdI2cDetect(const shell* shell, size_t argc, char** argv) {
 
 }  // namespace
 
-SHELL_CMD_ARG_REGISTER(i2cdetect, NULL, "Linux-like I2C bus scanner.", CmdI2cDetect, 2, 8);
+SHELL_CMD_ARG_REGISTER(i2cdetect, NULL, "Linux-like I2C bus scanner.", CmdI2cDetect,
+                       kI2cDetectRequiredArgs, kI2cDetectOptionalArgs);

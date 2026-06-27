@@ -27,10 +27,13 @@ namespace {
 constexpr platform::StringView kDisabledMode("disabled");
 constexpr platform::StringView kMissingAliasMode("missing-alias");
 constexpr platform::StringView kHardwareMode("hardware");
+constexpr std::size_t kSupervisedTaskNameCapacity = 32;
+constexpr std::size_t kFallbackSupervisedTaskSlotCount = 1;
+constexpr int kUnassignedWatchdogChannel = -1;
 
 struct SupervisedTaskSlot final {
     bool active{false};
-    platform::FixedString<32> name{};
+    platform::FixedString<kSupervisedTaskNameCapacity> name{};
     std::uint32_t timeout_ms{0};
     std::uint64_t last_feed_uptime_ms{0};
 };
@@ -45,11 +48,12 @@ struct WatchdogState final {
     const struct device* device{nullptr};
     bool initialized{false};
     bool last_reset_watchdog{false};
-    int channel_id{-1};
+    int channel_id{kUnassignedWatchdogChannel};
     int last_error{0};
     std::uint32_t feed_count{0};
     std::uint64_t last_feed_uptime_ms{0};
-    SupervisedTaskSlot supervised_tasks[kMaxSupervisedTasks == 0 ? 1 : kMaxSupervisedTasks]{};
+    SupervisedTaskSlot supervised_tasks[kMaxSupervisedTasks == 0 ? kFallbackSupervisedTaskSlotCount
+                                                                 : kMaxSupervisedTasks]{};
 };
 
 K_MUTEX_DEFINE(g_watchdog_lock);

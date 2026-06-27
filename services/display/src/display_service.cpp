@@ -10,6 +10,12 @@ LOG_MODULE_REGISTER(display_service, CONFIG_FW_SERVICE_DISPLAY_LOG_LEVEL);
 namespace services::display {
 namespace {
 
+constexpr int kBootSummaryColumn = 0;
+constexpr int kBootSummaryNameRow = 0;
+constexpr int kBootSummaryBoardRow = 16;
+constexpr int kBootSummaryVersionRow = 32;
+constexpr int kBootSummaryProfileRow = 48;
+
 platform::DeviceRef GetDisplayDevice() {
     return platform::DeviceRef{DEVICE_DT_GET(DT_ALIAS(display0))};
 }
@@ -52,10 +58,14 @@ bool ShowBootSummary() {
 
     cfb_framebuffer_clear(display_handle, false);
 
-    cfb_print(display_handle, board_info.display_name().c_str(), 0, 0);
-    cfb_print(display_handle, board_info.board_profile().c_str(), 0, 16);
-    cfb_print(display_handle, board_info.firmware_version().c_str(), 0, 32);
-    cfb_print(display_handle, board_info.build_profile().c_str(), 0, 48);
+    cfb_print(display_handle, board_info.display_name().c_str(), kBootSummaryColumn,
+              kBootSummaryNameRow);
+    cfb_print(display_handle, board_info.board_profile().c_str(), kBootSummaryColumn,
+              kBootSummaryBoardRow);
+    cfb_print(display_handle, board_info.firmware_version().c_str(), kBootSummaryColumn,
+              kBootSummaryVersionRow);
+    cfb_print(display_handle, board_info.build_profile().c_str(), kBootSummaryColumn,
+              kBootSummaryProfileRow);
 
     cfb_framebuffer_finalize(display_handle);
     return true;

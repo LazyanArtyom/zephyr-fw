@@ -6,7 +6,34 @@
 #include <services/manufacturing/manufacturing_service.h>
 #include <zephyr/shell/shell.h>
 
+#include <cstddef>
+
 namespace {
+
+constexpr platform::StringView kRootCommand("board");
+constexpr std::size_t kRootCommandArgIndex = 0;
+constexpr std::size_t kSubcommandArgIndex = 1;
+constexpr std::size_t kLocalActionArgIndex = 1;
+constexpr std::size_t kFullPathActionArgIndex = 2;
+constexpr std::size_t kActionOnlyArgCount = 1;
+constexpr std::size_t kActionValueArgCount = 2;
+constexpr std::size_t kBoardManufacturingRequiredArgs = 2;
+constexpr std::size_t kBoardManufacturingOptionalArgs = 2;
+
+std::size_t CommandArgBase(const platform::shell::Arguments& arguments,
+                           platform::StringView subcommand) {
+    if (arguments.size() > kSubcommandArgIndex &&
+        arguments.at(kRootCommandArgIndex).equals(kRootCommand) &&
+        arguments.at(kSubcommandArgIndex).equals(subcommand)) {
+        return kFullPathActionArgIndex;
+    }
+    return kLocalActionArgIndex;
+}
+
+int PrintUsage(const platform::shell::Console& output, platform::StringView usage) {
+    output.line(usage);
+    return -EINVAL;
+}
 
 void PrintBoardInfo(const platform::shell::Console& output) {
     const platform::BoardInfo& board_info = platform::BoardInfo::Current();
@@ -71,24 +98,32 @@ int CmdBoardSerial(const shell* shell, size_t argc, char** argv) {
     const platform::shell::Console output(shell);
     const platform::shell::Arguments arguments(argc, argv);
 
-    if (arguments.size() < 3) {
-        output.line("Usage: board serial get|set <value>");
-        return -EINVAL;
+    const std::size_t action_index = CommandArgBase(arguments, "serial");
+    if (arguments.size() < action_index + kActionOnlyArgCount ||
+        arguments.size() > action_index + kActionValueArgCount) {
+        return PrintUsage(output, "Usage: board serial get|set <value>");
     }
 
-    const platform::StringView action = arguments.at(2);
+    const platform::StringView action = arguments.at(action_index);
     if (action.equals("get")) {
+        if (arguments.size() != action_index + kActionOnlyArgCount) {
+            return PrintUsage(output, "Usage: board serial get");
+        }
         PrintManufacturingValue(output,
                                 services::manufacturing::ManufacturingService::BoardSerial());
         return 0;
     }
-    if (action.equals("set") && arguments.size() == 4) {
+    if (action.equals("set")) {
+        if (arguments.size() != action_index + kActionValueArgCount) {
+            return PrintUsage(output, "Usage: board serial set <value>");
+        }
         const platform::Status status =
-            services::manufacturing::ManufacturingService::SetBoardSerial(arguments.at(3));
+            services::manufacturing::ManufacturingService::SetBoardSerial(
+                arguments.at(action_index + kActionOnlyArgCount));
         if (!status.ok()) {
             return platform::shell::PrintStatusError(output, "board serial set failed", status);
         }
-        output.field("board/serial", arguments.at(3));
+        output.field("board/serial", arguments.at(action_index + kActionOnlyArgCount));
         return 0;
     }
 
@@ -100,25 +135,32 @@ int CmdBoardHardwareRevision(const shell* shell, size_t argc, char** argv) {
     const platform::shell::Console output(shell);
     const platform::shell::Arguments arguments(argc, argv);
 
-    if (arguments.size() < 3) {
-        output.line("Usage: board hw-rev get|set <value>");
-        return -EINVAL;
+    const std::size_t action_index = CommandArgBase(arguments, "hw-rev");
+    if (arguments.size() < action_index + kActionOnlyArgCount ||
+        arguments.size() > action_index + kActionValueArgCount) {
+        return PrintUsage(output, "Usage: board hw-rev get|set <value>");
     }
 
-    const platform::StringView action = arguments.at(2);
+    const platform::StringView action = arguments.at(action_index);
     if (action.equals("get")) {
+        if (arguments.size() != action_index + kActionOnlyArgCount) {
+            return PrintUsage(output, "Usage: board hw-rev get");
+        }
         PrintManufacturingValue(
             output, services::manufacturing::ManufacturingService::BoardHardwareRevision());
         return 0;
     }
-    if (action.equals("set") && arguments.size() == 4) {
+    if (action.equals("set")) {
+        if (arguments.size() != action_index + kActionValueArgCount) {
+            return PrintUsage(output, "Usage: board hw-rev set <value>");
+        }
         const platform::Status status =
             services::manufacturing::ManufacturingService::SetBoardHardwareRevision(
-                arguments.at(3));
+                arguments.at(action_index + kActionOnlyArgCount));
         if (!status.ok()) {
             return platform::shell::PrintStatusError(output, "board hw-rev set failed", status);
         }
-        output.field("board/hw-rev", arguments.at(3));
+        output.field("board/hw-rev", arguments.at(action_index + kActionOnlyArgCount));
         return 0;
     }
 
@@ -157,8 +199,8 @@ int CmdBoardCaps(const shell* shell, size_t argc, char** argv) {
 SHELL_STATIC_SUBCMD_SET_CREATE(board_subcommands,
                                SHELL_CMD(info, NULL, "Show board information.", CmdBoardInfo),
                                SHELL_CMD(caps, NULL, "Show board capabilities.", CmdBoardCaps),
-                               SHELL_CMD_ARG(serial, NULL, "Get or set board serial.", CmdBoardSerial, 3, 1),
-                               SHELL_CMD_ARG(hw-rev, NULL, "Get or set board hardware revision.", CmdBoardHardwareRevision, 3, 1),
+                               SHELL_CMD_ARG(serial, NULL, "Get or set board serial.", CmdBoardSerial, kBoardManufacturingRequiredArgs, kBoardManufacturingOptionalArgs),
+                               SHELL_CMD_ARG(hw-rev, NULL, "Get or set board hardware revision.", CmdBoardHardwareRevision, kBoardManufacturingRequiredArgs, kBoardManufacturingOptionalArgs),
                                SHELL_SUBCMD_SET_END);
 /* clang-format on */
 

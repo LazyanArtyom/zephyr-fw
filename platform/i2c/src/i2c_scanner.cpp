@@ -4,7 +4,19 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/i2c.h>
 
+#include <cstdint>
+
 namespace {
+
+constexpr std::uint8_t kI2c0Index = 0;
+constexpr std::uint8_t kI2c1Index = 1;
+constexpr std::uint8_t kI2c2Index = 2;
+constexpr std::uint8_t kI2c3Index = 3;
+constexpr std::uint8_t kInvalidBusIndex = 0xffU;
+constexpr std::uint8_t kFirstUsableAddress = 0x03U;
+constexpr std::uint8_t kLastUsableAddress = 0x77U;
+constexpr std::uint16_t kMaxBusIndexValue = 0xffU;
+constexpr std::uint8_t kDecimalBase = 10U;
 
 struct BusDescriptor {
     std::uint8_t index;
@@ -15,34 +27,34 @@ struct BusDescriptor {
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c0), okay)
 #define FW_I2C0_ENTRY \
-    {0, DEVICE_DT_GET(DT_NODELABEL(i2c0)), "i2c0", DEVICE_DT_NAME(DT_NODELABEL(i2c0))},
+    {kI2c0Index, DEVICE_DT_GET(DT_NODELABEL(i2c0)), "i2c0", DEVICE_DT_NAME(DT_NODELABEL(i2c0))},
 #else
 #define FW_I2C0_ENTRY
 #endif
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c1), okay)
 #define FW_I2C1_ENTRY \
-    {1, DEVICE_DT_GET(DT_NODELABEL(i2c1)), "i2c1", DEVICE_DT_NAME(DT_NODELABEL(i2c1))},
+    {kI2c1Index, DEVICE_DT_GET(DT_NODELABEL(i2c1)), "i2c1", DEVICE_DT_NAME(DT_NODELABEL(i2c1))},
 #else
 #define FW_I2C1_ENTRY
 #endif
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c2), okay)
 #define FW_I2C2_ENTRY \
-    {2, DEVICE_DT_GET(DT_NODELABEL(i2c2)), "i2c2", DEVICE_DT_NAME(DT_NODELABEL(i2c2))},
+    {kI2c2Index, DEVICE_DT_GET(DT_NODELABEL(i2c2)), "i2c2", DEVICE_DT_NAME(DT_NODELABEL(i2c2))},
 #else
 #define FW_I2C2_ENTRY
 #endif
 
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(i2c3), okay)
 #define FW_I2C3_ENTRY \
-    {3, DEVICE_DT_GET(DT_NODELABEL(i2c3)), "i2c3", DEVICE_DT_NAME(DT_NODELABEL(i2c3))},
+    {kI2c3Index, DEVICE_DT_GET(DT_NODELABEL(i2c3)), "i2c3", DEVICE_DT_NAME(DT_NODELABEL(i2c3))},
 #else
 #define FW_I2C3_ENTRY
 #endif
 
 constexpr BusDescriptor kBuses[] = {
-    FW_I2C0_ENTRY FW_I2C1_ENTRY FW_I2C2_ENTRY FW_I2C3_ENTRY{0xff, nullptr, "", ""},
+    FW_I2C0_ENTRY FW_I2C1_ENTRY FW_I2C2_ENTRY FW_I2C3_ENTRY{kInvalidBusIndex, nullptr, "", ""},
 };
 
 bool IsUnsignedInteger(platform::StringView value) {
@@ -63,9 +75,9 @@ platform::Result<std::uint8_t> ParseIndex(platform::StringView value) {
     std::uint16_t index_value = 0;
 
     for (std::size_t index = 0; index < value.size(); ++index) {
-        index_value = static_cast<std::uint16_t>(index_value * 10U +
+        index_value = static_cast<std::uint16_t>(index_value * kDecimalBase +
                                                  static_cast<std::uint16_t>(value[index] - '0'));
-        if (index_value > 0xffU) {
+        if (index_value > kMaxBusIndexValue) {
             return platform::Result<std::uint8_t>::FromStatus(
                 platform::Status::InvalidArgument("i2c bus index is too large"));
         }
@@ -195,13 +207,13 @@ Result<I2cBus> I2cBus::Resolve(StringView bus_spec) {
 
 bool I2cBus::is_address_claimed(std::uint8_t address) const {
     switch (index_) {
-        case 0:
+        case kI2c0Index:
             return I2c0ClaimsAddress(address);
-        case 1:
+        case kI2c1Index:
             return I2c1ClaimsAddress(address);
-        case 2:
+        case kI2c2Index:
             return I2c2ClaimsAddress(address);
-        case 3:
+        case kI2c3Index:
             return I2c3ClaimsAddress(address);
         default:
             return false;
@@ -209,7 +221,7 @@ bool I2cBus::is_address_claimed(std::uint8_t address) const {
 }
 
 bool I2cScanner::IsReservedAddress(std::uint8_t address) {
-    return address < 0x03 || address > 0x77;
+    return address < kFirstUsableAddress || address > kLastUsableAddress;
 }
 
 I2cAddressProbeResult I2cScanner::Probe(const I2cBus& bus, std::uint8_t address,

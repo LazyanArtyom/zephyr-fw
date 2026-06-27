@@ -9,6 +9,11 @@
 namespace {
 
 constexpr std::size_t kRegistryCapacity = 64;
+constexpr std::size_t kMaxKeyDepth = 8;
+constexpr std::int64_t kInt32MaxValue = 2147483647LL;
+constexpr std::int64_t kInt32MinMagnitude = 2147483648LL;
+constexpr std::uint64_t kUInt32MaxValue = 0xffffffffULL;
+constexpr std::uint64_t kDecimalBase = 10ULL;
 const platform::SettingMetadata* g_registry[kRegistryCapacity]{};
 std::size_t g_registry_size = 0;
 
@@ -194,8 +199,9 @@ platform::Result<std::int32_t> ParseInt32(platform::StringView value) {
             return platform::Result<std::int32_t>::FromStatus(
                 platform::Status::InvalidArgument("invalid integer value"));
         }
-        parsed = (parsed * 10) + static_cast<std::int64_t>(value[index] - '0');
-        const std::int64_t limit = negative ? 2147483648LL : 2147483647LL;
+        parsed = (parsed * static_cast<std::int64_t>(kDecimalBase)) +
+                 static_cast<std::int64_t>(value[index] - '0');
+        const std::int64_t limit = negative ? kInt32MinMagnitude : kInt32MaxValue;
         if (parsed > limit) {
             return platform::Result<std::int32_t>::FromStatus(
                 platform::Status::InvalidArgument("integer value is out of range"));
@@ -218,8 +224,8 @@ platform::Result<std::uint32_t> ParseUInt32(platform::StringView value) {
             return platform::Result<std::uint32_t>::FromStatus(
                 platform::Status::InvalidArgument("invalid integer value"));
         }
-        parsed = (parsed * 10U) + static_cast<std::uint64_t>(value[index] - '0');
-        if (parsed > 0xffffffffULL) {
+        parsed = (parsed * kDecimalBase) + static_cast<std::uint64_t>(value[index] - '0');
+        if (parsed > kUInt32MaxValue) {
             return platform::Result<std::uint32_t>::FromStatus(
                 platform::Status::InvalidArgument("integer value is out of range"));
         }
@@ -269,7 +275,7 @@ bool SettingRegistry::IsValidKey(StringView key) {
                 return false;
             }
             ++depth;
-            if (depth > 8) {
+            if (depth > kMaxKeyDepth) {
                 return false;
             }
         }
